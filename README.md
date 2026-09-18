@@ -64,7 +64,7 @@ auth: jwt + oauth (вк).
 ### Схема БД
 Ссылка на [dbdiagram.io](https://dbdiagram.io/d/VK-Smart-Catch-Up-626eaaa095e7f23c61a67753)
 ### Figma (макеты)
-Ссылка на [figma.com](#)
+Ссылка на [figma.com](https://www.figma.com/design/mYToTLkWm5orksvhL2uBxq/VK-Smart-Catch-Up?node-id=0-1&t=z5BMQi9SaOLSMdqE-1)
 
 ### Стек
 - Go
