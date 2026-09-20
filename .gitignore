@@ -156,4 +156,4 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/go,goland+all,windows,linux
 
 .idea
-migrations/run-tern.ps1
+/migrations/run_tern.ps1
