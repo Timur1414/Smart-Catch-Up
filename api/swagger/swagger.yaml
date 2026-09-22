@@ -1,0 +1,622 @@
+openapi: 3.1.0
+info:
+  version: "1.0.0"
+  title: "Swagger VK Smart Catch-Up"
+tags:
+  - name: auth
+  - name: user
+  - name: digest
+paths:
+  /auth/login:
+    post:
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/schemas/LoginBody'
+      responses:
+        '200':
+          description: Успешная авторизация
+          headers:
+            Set-Cookie:
+              description: JWT токен
+              schema:
+                type: string
+                example: "jwt=token; Path=/; Secure; HttpOnly; SameSite=Lax;"
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/LoginSuccess'
+        '401':
+          description: Ошибка авторизации - неверный логин или пароль
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/LoginError'
+        '429':
+          description: Слишком много запросов
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/TooManyRequestsError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+
+  /auth/refresh:
+    post:
+      tags:
+        - auth
+      responses:
+        '200':
+          description: Успешное обновление
+          headers:
+            Set-Cookie:
+              description: JWT токен
+              schema:
+                type: string
+                example: "jwt=token; Path=/; Secure; HttpOnly; SameSite=Lax;"
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/LoginSuccess'
+        '401':
+          description: Ошибка авторизации - неверный refresh токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/UnauthorizedError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+
+  /auth/signup:
+    post:
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/schemas/SignupBody'
+      responses:
+        '200':
+          description: Успешная регистрация
+          headers:
+            Set-Cookie:
+              description: JWT токен в cookie
+              schema:
+                type: string
+                example: "jwt=token; Path=/; Secure; HttpOnly; SameSite=Strict;"
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/SignupSuccess'
+        '400':
+          description: Ошибка валидации - некорректные данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ValidationError'
+        '409':
+          description: Конфликт - пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/SignupError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Успешный выход из системы
+          headers:
+            Set-Cookie:
+              description: Кука с истёкшим временем жизни для удаления токена на клиенте
+              schema:
+                type: string
+                example: "jwt=; Path=/; Secure; HttpOnly; SameSite=Strict; Expires=Thu, 01 Jan 1970 00:00:00 GMT;"
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/LogoutSuccess'
+        '401':
+          description: Не авторизован - невалидный или отсутствующий токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/UnauthorizedError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+
+  /profile:
+    get:
+      tags:
+        - user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Профиль пользователя успешно получен
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/User'
+        '401':
+          description: Не авторизован - невалидный или отсутствующий токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/UnauthorizedError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+    post:
+      tags:
+        - user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/definitions/schemas/UpdateProfileBody'
+      responses:
+        '200':
+          description: Обновление профиля
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/OK'
+        '400':
+          description: Ошибка валидации - некорректные данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ValidationError'
+        '401':
+          description: Не авторизован
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/UnauthorizedError'
+        '409':
+          description: Конфликт - пользователь с таким email уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/SignupError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+
+  /profile/avatar:
+    post:
+      tags:
+        - user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/definitions/schemas/AvatarData'
+      responses:
+        '200':
+          description: Аватар обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/OK'
+        '400':
+          description: Ошибка валидации - некорректные данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ValidationError'
+        '401':
+          description: Не авторизован - невалидный или отсутствующий токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/UnauthorizedError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+
+  /is_staff:
+    get:
+      tags:
+        - user
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Роль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/UserRole'
+        '401':
+          description: Не авторизован - невалидный или отсутствующий токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/UnauthorizedError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+
+  /digest:
+    get:
+      tags:
+        - digest
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Получение дайджеста
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/Digest'
+        '401':
+          description: Не авторизован - невалидный или отсутствующий токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/UnauthorizedError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/definitions/schemas/ServerError'
+
+securityDefinitions:
+  vk_auth:
+    type: "oauth2"
+    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
+    flow: "implicit"
+
+definitions:
+  schemas:
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          example: "abc@example.com"
+        password:
+          type: string
+          example: 'SecurePass123!'
+      required:
+        - email
+        - password
+
+    LoginSuccess:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: 'Вход в систему прошел успешно'
+      required:
+        - code
+        - message
+
+    LoginError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 401
+        message:
+          type: string
+          example: 'Неверная почта или пароль'
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: 'email'
+              message:
+                type: string
+                example: 'Неверная почта или пароль'
+            required:
+              - field
+              - message
+      required:
+        - code
+        - message
+
+    SignupBody:
+      type: object
+      properties:
+        email:
+          type: string
+          example: 'abc@example.com'
+        password:
+          type: string
+          example: 'SecurePass123!'
+        confirm_password:
+          type: string
+          example: 'SecurePass123!'
+      required:
+        - email
+        - password
+        - confirm_password
+
+    SignupSuccess:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: 'Регистрация прошла успешно'
+      required:
+        - code
+        - message
+
+    SignupError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 409
+        message:
+          type: string
+          example: 'Пользователь с таким именем уже существует'
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: 'email'
+              message:
+                type: string
+                example: 'Пользователь с таким именем уже существует'
+            required:
+              - field
+              - message
+      required:
+        - code
+        - message
+
+    LogoutSuccess:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: 'Успешный выход из системы'
+      required:
+        - code
+        - message
+
+    User:
+      type: object
+      properties:
+        email:
+          type: string
+          example: 'abc@example.com'
+        created_at:
+          type: string
+          example: '2026-01-15T08:00:00Z'
+        avatar_url:
+          type: string
+          example: 'https://example.com/avatars/user123.jpg'
+        first_name:
+          type: string
+          example: 'John'
+        last_name:
+          type: string
+          example: 'Doe'
+      required:
+        - email
+        - avatar_url
+        - first_name
+        - last_name
+
+    UpdateProfileBody:
+      type: object
+      properties:
+        email:
+          type: string
+          example: 'abc@example.com'
+        first_name:
+          type: string
+          example: 'John'
+        last_name:
+          type: string
+          example: 'Doe'
+      required:
+        - email
+        - first_name
+        - last_name
+
+    AvatarData:
+      type: object
+      properties:
+        avatar:
+          type: string
+          format: binary
+          description: Файл изображения (макс. 5MB)
+      required:
+        - avatar
+
+    UserRole:
+      type: object
+      properties:
+        is_staff:
+          type: boolean
+          example: true
+      required:
+        - is_staff
+
+    Digest:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        created_at:
+          type: string
+          example: '2026-01-15T08:00:00Z'
+        important:
+          type: array
+          items:
+            type: object
+            properties:
+              notification:
+                type: string
+                example: 'Direct message from John'
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              category_type:
+                type: string
+                example: 'likes'
+              text:
+                type: string
+                example: 'text'
+      required:
+        - code
+        - created_at
+        - important
+        - categories
+
+    OK:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: 'ok'
+      required:
+        - code
+        - message
+
+    TooManyRequestsError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 429
+        message:
+          type: string
+          example: 'Слишком много запросов'
+        request_id:
+          type: string
+          example: 'req_abc123xyz'
+      required:
+        - code
+        - message
+
+    ValidationError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: 'Ошибка валидации'
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                example: 'password'
+              message:
+                type: string
+                example: 'Поле обязательно для заполнения'
+            required:
+              - field
+              - message
+      required:
+        - code
+        - message
+
+    UnauthorizedError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 401
+        message:
+          type: string
+          example: 'Не авторизован — невалидный или отсутствующий токен'
+      required:
+        - code
+        - message
+
+    ServerError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 500
+        message:
+          type: string
+          example: 'Внутренняя ошибка сервера'
+        request_id:
+          type: string
+          example: 'req_abc123xyz'
+      required:
+        - code
+        - message

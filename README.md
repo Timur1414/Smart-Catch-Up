@@ -60,7 +60,7 @@ auth: jwt + oauth (вк).
 все микросервисы на go, а нейронки писать и обучать (если придётся) на python.
 ролевая модель у пользователей: только поле is_staff.
 ### API
-// тут должен быть файл со сваггером
+Swagger расположен по пути: `api/swagger/swagger.yaml`
 ### Схема БД
 Ссылка на [dbdiagram.io](https://dbdiagram.io/d/VK-Smart-Catch-Up-626eaaa095e7f23c61a67753)
 
