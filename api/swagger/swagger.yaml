@@ -6,6 +6,7 @@ tags:
   - name: auth
   - name: user
   - name: digest
+  - name: admin
 paths:
   /auth/login:
     post:
@@ -16,10 +17,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/definitions/schemas/LoginBody'
+              $ref: '#/components/schemas/LoginBody'
       responses:
         '200':
-          description: Успешная авторизация
+          description: Успешная авторизация и установка двух токенов
           headers:
             Set-Cookie:
               description: JWT токен
@@ -29,25 +30,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/LoginSuccess'
+                $ref: '#/components/schemas/LoginSuccess'
         '401':
           description: Ошибка авторизации - неверный логин или пароль
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/LoginError'
+                $ref: '#/components/schemas/LoginError'
         '429':
           description: Слишком много запросов
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/TooManyRequestsError'
+                $ref: '#/components/schemas/TooManyRequestsError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
 
   /auth/refresh:
     post:
@@ -65,19 +66,19 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/LoginSuccess'
+                $ref: '#/components/schemas/LoginSuccess'
         '401':
           description: Ошибка авторизации - неверный refresh токен
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/UnauthorizedError'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
 
   /auth/signup:
     post:
@@ -88,7 +89,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/definitions/schemas/SignupBody'
+              $ref: '#/components/schemas/SignupBody'
       responses:
         '200':
           description: Успешная регистрация
@@ -101,32 +102,32 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/SignupSuccess'
+                $ref: '#/components/schemas/SignupSuccess'
         '400':
           description: Ошибка валидации - некорректные данные пользователя
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ValidationError'
+                $ref: '#/components/schemas/ValidationError'
         '409':
           description: Конфликт - пользователь с таким email уже существует
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/SignupError'
+                $ref: '#/components/schemas/SignupError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
 
   /auth/logout:
     post:
       tags:
         - auth
       security:
-        - bearerAuth: [ ]
+        - cookieAuth: [ ]
       responses:
         '200':
           description: Успешный выход из системы
@@ -139,185 +140,273 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/LogoutSuccess'
+                $ref: '#/components/schemas/LogoutSuccess'
         '401':
           description: Не авторизован - невалидный или отсутствующий токен
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/UnauthorizedError'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
 
   /profile:
     get:
       tags:
         - user
       security:
-        - bearerAuth: []
+        - cookieAuth: [ ]
       responses:
         '200':
           description: Профиль пользователя успешно получен
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/User'
+                $ref: '#/components/schemas/User'
         '401':
           description: Не авторизован - невалидный или отсутствующий токен
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/UnauthorizedError'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
     post:
       tags:
         - user
       security:
-        - bearerAuth: []
+        - cookieAuth: [ ]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/definitions/schemas/UpdateProfileBody'
+              $ref: '#/components/schemas/UpdateProfileBody'
       responses:
         '200':
           description: Обновление профиля
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/OK'
+                $ref: '#/components/schemas/UpdateProfile'
         '400':
           description: Ошибка валидации - некорректные данные пользователя
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ValidationError'
+                $ref: '#/components/schemas/ValidationError'
         '401':
           description: Не авторизован
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/UnauthorizedError'
+                $ref: '#/components/schemas/UnauthorizedError'
         '409':
           description: Конфликт - пользователь с таким email уже существует
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/SignupError'
+                $ref: '#/components/schemas/SignupError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
 
   /profile/avatar:
     post:
       tags:
         - user
       security:
-        - bearerAuth: []
+        - cookieAuth: [ ]
       requestBody:
         required: true
         content:
           multipart/form-data:
             schema:
-              $ref: '#/definitions/schemas/AvatarData'
+              $ref: '#/components/schemas/AvatarData'
       responses:
         '200':
           description: Аватар обновлён
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/OK'
+                $ref: '#/components/schemas/OK'
         '400':
           description: Ошибка валидации - некорректные данные пользователя
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ValidationError'
+                $ref: '#/components/schemas/ValidationError'
         '401':
           description: Не авторизован - невалидный или отсутствующий токен
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/UnauthorizedError'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
 
   /is_staff:
     get:
       tags:
         - user
       security:
-        - bearerAuth: [ ]
+        - cookieAuth: [ ]
       responses:
         '200':
           description: Роль пользователя
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/UserRole'
+                $ref: '#/components/schemas/UserRole'
         '401':
           description: Не авторизован - невалидный или отсутствующий токен
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/UnauthorizedError'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
 
   /digest:
     get:
       tags:
         - digest
       security:
-        - bearerAuth: [ ]
+        - cookieAuth: [ ]
       responses:
         '200':
           description: Получение дайджеста
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/Digest'
+                $ref: '#/components/schemas/Digest'
         '401':
           description: Не авторизован - невалидный или отсутствующий токен
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/UnauthorizedError'
+                $ref: '#/components/schemas/UnauthorizedError'
         '500':
           description: server error
           content:
             application/json:
               schema:
-                $ref: '#/definitions/schemas/ServerError'
+                $ref: '#/components/schemas/ServerError'
 
-securityDefinitions:
-  vk_auth:
-    type: "oauth2"
-    authorizationUrl: "http://petstore.swagger.io/oauth/dialog"
-    flow: "implicit"
+  /admin/generate:
+    post:
+      tags:
+        - admin
+      security:
+        - cookieAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateData'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OK'
+        '400':
+          description: Ошибка валидации - некорректные данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Не авторизован - невалидный или отсутствующий токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Недоступно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
 
-definitions:
+  /admin/generate_n:
+    post:
+      tags:
+        - admin
+      security:
+        - cookieAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateNData'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OK'
+        '400':
+          description: Ошибка валидации - некорректные данные пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Не авторизован - невалидный или отсутствующий токен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedError'
+        '403':
+          description: Недоступно
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ForbiddenError'
+        '500':
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerError'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+
   schemas:
     LoginBody:
       type: object
@@ -460,11 +549,15 @@ definitions:
         last_name:
           type: string
           example: 'Doe'
+        is_staff:
+          type: boolean
+          example: false
       required:
         - email
         - avatar_url
         - first_name
         - last_name
+        - is_staff
 
     UpdateProfileBody:
       type: object
@@ -482,6 +575,21 @@ definitions:
         - email
         - first_name
         - last_name
+
+    UpdateProfile:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: 'ok'
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+        - code
+        - message
 
     AvatarData:
       type: object
@@ -519,6 +627,9 @@ definitions:
               notification:
                 type: string
                 example: 'Direct message from John'
+              timestamp:
+                type: string
+                example: '2026-01-15T08:00:00Z'
         categories:
           type: array
           items:
@@ -535,6 +646,36 @@ definitions:
         - created_at
         - important
         - categories
+
+    GenerateData:
+      type: object
+      properties:
+        notification_type:
+          type: string
+          example: 'direct_msg'
+        text:
+          type: string
+          example: 'text'
+        user_id:
+          type: integer
+          example: 42
+
+    GenerateNData:
+      type: object
+      properties:
+        notification_types:
+          type: array
+          items:
+            type: string
+            example: 'direct_msg'
+        number:
+          type: integer
+          example: 100
+        user_ids:
+          type: array
+          items:
+            type: integer
+            example: 42
 
     OK:
       type: object
@@ -588,6 +729,19 @@ definitions:
             required:
               - field
               - message
+      required:
+        - code
+        - message
+
+    ForbiddenError:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 403
+        message:
+          type: string
+          example: 'Доступ запрещён'
       required:
         - code
         - message
