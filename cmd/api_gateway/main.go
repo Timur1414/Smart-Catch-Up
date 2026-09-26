@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -44,6 +46,23 @@ func main() {
 			fmt.Println("Error closing access logger: ", err)
 		}
 	}()
+
+	connStr := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s",
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("POSTGRES_PASSWORD"),
+		os.Getenv("POSTGRES_HOST"),
+		os.Getenv("POSTGRES_PORT"),
+		os.Getenv("POSTGRES_DB"),
+	)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	dbPool, err := database.New(ctx, connStr)
+	if err != nil {
+		log.Fatal("Failed to connect to postgres", zap.Error(err))
+	}
+	defer dbPool.Close()
+	log.Info("Connected to Postgres")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
