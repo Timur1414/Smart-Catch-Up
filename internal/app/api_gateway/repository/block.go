@@ -29,3 +29,11 @@ type BlockPostgres struct {
 func NewBlockPostgres(db database.DB) *BlockPostgres {
 	return &BlockPostgres{db: db}
 }
+
+type BlockPartPostgres struct {
+	db database.DB
+}
+
+func NewBlockPartPostgres(db database.DB) *BlockPartPostgres {
+	return &BlockPartPostgres{db: db}
+}

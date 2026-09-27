@@ -21,11 +21,3 @@ type NotificationPostgres struct {
 func NewNotificationPostgres(db database.DB) *NotificationPostgres {
 	return &NotificationPostgres{db: db}
 }
-
-type NotificationBlockPostgres struct {
-	db database.DB
-}
-
-func NewNotificationBlockPostgres(db database.DB) *NotificationBlockPostgres {
-	return &NotificationBlockPostgres{db: db}
-}

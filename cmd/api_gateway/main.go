@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
@@ -63,6 +64,22 @@ func main() {
 	}
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
+
+	userRepo := repository.NewUserPostgres(dbPool)
+	settingsRepo := repository.NewSettingsPostgres(dbPool)
+	notificationRepo := repository.NewNotificationPostgres(dbPool)
+	digestRepo := repository.NewDigestPostgres(dbPool)
+	clusterRepo := repository.NewClusterPostgres(dbPool)
+	blockRepo := repository.NewBlockPostgres(dbPool)
+	blockPartRepo := repository.NewBlockPartPostgres(dbPool)
+	_ = userRepo
+	_ = settingsRepo
+	_ = notificationRepo
+	_ = digestRepo
+	_ = clusterRepo
+	_ = blockRepo
+	_ = blockPartRepo
+	log.Info("Repository initialized")
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
