@@ -93,7 +93,6 @@ func main() {
 	log.Info("Handler initialized")
 	_ = settingsUseCase
 	_ = notificationHandler
-	_ = digestHandler
 	_ = clusterHandler
 	_ = blockHandler
 	_ = blockPartHandler
@@ -110,6 +109,8 @@ func main() {
 	mux.HandleFunc("POST /profile", userHandler.UpdateProfile)
 	mux.HandleFunc("POST /profile/avatar", userHandler.UpdateProfileAvatar)
 	mux.HandleFunc("GET /is_staff", userHandler.IsStaff)
+
+	mux.HandleFunc("GET /digest", digestHandler.Get)
 
 	handler := middleware.AccessLogMiddleware(mux)
 	handler = middleware.PanicMiddleware(handler)
