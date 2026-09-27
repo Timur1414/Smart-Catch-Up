@@ -10,6 +10,7 @@ import (
 	delivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
+	"github.com/Timur1414/Smart-Catch-Up/internal/middleware"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
@@ -108,7 +109,8 @@ func main() {
 		w.WriteHeader(http.StatusNoContent)
 	})
 
-	handler := mux
+	handler := middleware.AccessLogMiddleware(mux)
+	handler = middleware.PanicMiddleware(handler)
 
 	addr := ":" + os.Getenv("PORT")
 	server := http.Server{
