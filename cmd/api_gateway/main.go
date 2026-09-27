@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
@@ -72,14 +73,22 @@ func main() {
 	clusterRepo := repository.NewClusterPostgres(dbPool)
 	blockRepo := repository.NewBlockPostgres(dbPool)
 	blockPartRepo := repository.NewBlockPartPostgres(dbPool)
-	_ = userRepo
-	_ = settingsRepo
-	_ = notificationRepo
-	_ = digestRepo
-	_ = clusterRepo
-	_ = blockRepo
-	_ = blockPartRepo
 	log.Info("Repository initialized")
+	userUseCase := usecase.NewUser(userRepo)
+	settingsUseCase := usecase.NewSettings(settingsRepo)
+	notificationUseCase := usecase.NewNotification(notificationRepo)
+	digestUseCase := usecase.NewDigest(digestRepo)
+	clusterUseCase := usecase.NewCluster(clusterRepo)
+	blockUseCase := usecase.NewBlock(blockRepo)
+	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
+	log.Info("UseCase initialized")
+	_ = userUseCase
+	_ = settingsUseCase
+	_ = notificationUseCase
+	_ = digestUseCase
+	_ = clusterUseCase
+	_ = blockUseCase
+	_ = blockPartUseCase
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
