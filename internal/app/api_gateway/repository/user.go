@@ -12,6 +12,13 @@ type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	Update(ctx context.Context, user domain.User) error
+}
+
+type SettingsRepository interface {
+	Create(ctx context.Context, settings domain.Settings) (int, error)
+	GetById(ctx context.Context, id int) (domain.Settings, error)
+	GetByUser(ctx context.Context, user domain.User) (domain.Settings, error)
+	Update(ctx context.Context, user domain.Settings) error
 	UpdateAvatar(ctx context.Context, id int, avatarUrl string) error
 }
 
@@ -20,7 +27,13 @@ type UserPostgres struct {
 }
 
 func NewUserPostgres(db database.DB) *UserPostgres {
-	return &UserPostgres{
-		db: db,
-	}
+	return &UserPostgres{db: db}
+}
+
+type SettingsPostgres struct {
+	db database.DB
+}
+
+func NewSettingsPostgres(db database.DB) *SettingsPostgres {
+	return &SettingsPostgres{db: db}
 }
