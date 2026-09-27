@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
@@ -54,7 +55,7 @@ func AccessLogMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := logger.GetAccessLogger()
 		requestId := uuid.New().String()
-		ctx := context.WithValue(r.Context(), "request_id", requestId)
+		ctx := context.WithValue(r.Context(), context_helper.ContextKeyRequestId, requestId)
 		log.Info("Request",
 			zap.String("path", r.URL.Path),
 			zap.String("method", r.Method),

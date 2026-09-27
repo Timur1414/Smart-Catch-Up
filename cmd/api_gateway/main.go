@@ -85,15 +85,13 @@ func main() {
 	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
 	log.Info("UseCase initialized")
 	userHandler := delivery.NewUserHandler(userUseCase)
-	settingsHandler := delivery.NewSettingsHandler(settingsUseCase)
 	notificationHandler := delivery.NewNotificationHandler(notificationUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase)
 	clusterHandler := delivery.NewClusterHandler(clusterUseCase)
 	blockHandler := delivery.NewBlockHandler(blockUseCase)
 	blockPartHandler := delivery.NewBlockPartHandler(blockPartUseCase)
 	log.Info("Handler initialized")
-	_ = userHandler
-	_ = settingsHandler
+	_ = settingsUseCase
 	_ = notificationHandler
 	_ = digestHandler
 	_ = clusterHandler
@@ -108,6 +106,10 @@ func main() {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("GET /profile", userHandler.GetProfile)
+	mux.HandleFunc("POST /profile", userHandler.UpdateProfile)
+	mux.HandleFunc("POST /profile/avatar", userHandler.UpdateProfileAvatar)
+	mux.HandleFunc("GET /is_staff", userHandler.IsStaff)
 
 	handler := middleware.AccessLogMiddleware(mux)
 	handler = middleware.PanicMiddleware(handler)
