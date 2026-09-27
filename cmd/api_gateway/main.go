@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	delivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
@@ -82,13 +83,21 @@ func main() {
 	blockUseCase := usecase.NewBlock(blockRepo)
 	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
 	log.Info("UseCase initialized")
-	_ = userUseCase
-	_ = settingsUseCase
-	_ = notificationUseCase
-	_ = digestUseCase
-	_ = clusterUseCase
-	_ = blockUseCase
-	_ = blockPartUseCase
+	userHandler := delivery.NewUserHandler(userUseCase)
+	settingsHandler := delivery.NewSettingsHandler(settingsUseCase)
+	notificationHandler := delivery.NewNotificationHandler(notificationUseCase)
+	digestHandler := delivery.NewDigestHandler(digestUseCase)
+	clusterHandler := delivery.NewClusterHandler(clusterUseCase)
+	blockHandler := delivery.NewBlockHandler(blockUseCase)
+	blockPartHandler := delivery.NewBlockPartHandler(blockPartUseCase)
+	log.Info("Handler initialized")
+	_ = userHandler
+	_ = settingsHandler
+	_ = notificationHandler
+	_ = digestHandler
+	_ = clusterHandler
+	_ = blockHandler
+	_ = blockPartHandler
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
