@@ -23,7 +23,7 @@ func New(ctx context.Context, connString string) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pgx config: %w", err)
 	}
-	cfg.MaxConns = 25
+	cfg.MaxConns = 90
 	cfg.MinConns = 10
 	cfg.MaxConnLifetime = time.Hour
 	cfg.MaxConnIdleTime = 10 * time.Minute
