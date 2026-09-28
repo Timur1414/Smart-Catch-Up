@@ -85,17 +85,14 @@ func main() {
 	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
 	log.Info("UseCase initialized")
 	userHandler := delivery.NewUserHandler(userUseCase)
-	notificationHandler := delivery.NewNotificationHandler(notificationUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase)
-	clusterHandler := delivery.NewClusterHandler(clusterUseCase)
-	blockHandler := delivery.NewBlockHandler(blockUseCase)
-	blockPartHandler := delivery.NewBlockPartHandler(blockPartUseCase)
+	adminHandler := delivery.NewAdminHandler(notificationUseCase)
+	authHandler := delivery.NewAuthHandler(userUseCase)
 	log.Info("Handler initialized")
 	_ = settingsUseCase
-	_ = notificationHandler
-	_ = clusterHandler
-	_ = blockHandler
-	_ = blockPartHandler
+	_ = clusterUseCase
+	_ = blockUseCase
+	_ = blockPartUseCase
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -105,12 +102,17 @@ func main() {
 		}
 		w.WriteHeader(http.StatusNoContent)
 	})
+	mux.HandleFunc("POST /auth/login", authHandler.Login)
+	mux.HandleFunc("POST /auth/refresh", authHandler.Refresh)
+	mux.HandleFunc("POST auth/register", authHandler.Register)
+	mux.HandleFunc("POST /auth/logout", authHandler.Logout)
 	mux.HandleFunc("GET /profile", userHandler.GetProfile)
 	mux.HandleFunc("POST /profile", userHandler.UpdateProfile)
 	mux.HandleFunc("POST /profile/avatar", userHandler.UpdateProfileAvatar)
 	mux.HandleFunc("GET /is_staff", userHandler.IsStaff)
-
 	mux.HandleFunc("GET /digest", digestHandler.Get)
+	mux.HandleFunc("POST /admin/generate", adminHandler.Generate1)
+	mux.HandleFunc("POST /admin/generate_n", adminHandler.GenerateN)
 
 	handler := middleware.AccessLogMiddleware(mux)
 	handler = middleware.PanicMiddleware(handler)
