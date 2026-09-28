@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
-	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type ClusterRepository interface {
@@ -14,10 +14,10 @@ type ClusterRepository interface {
 }
 
 type ClusterPostgres struct {
-	db database.DB
+	db *pgxpool.Pool
 }
 
-func NewClusterPostgres(db database.DB) *ClusterPostgres {
+func NewClusterPostgres(db *pgxpool.Pool) *ClusterPostgres {
 	return &ClusterPostgres{db: db}
 }
 

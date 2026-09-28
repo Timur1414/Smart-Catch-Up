@@ -3,17 +3,17 @@ package http
 import (
 	"net/http"
 
-	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
+	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 )
 
 type AuthHandler struct {
-	usecase usecase.UserUseCase
+	authServer authpb.AuthClient
 }
 
-func NewAuthHandler(usecase usecase.UserUseCase) *AuthHandler {
-	return &AuthHandler{usecase}
+func NewAuthHandler(authServer authpb.AuthClient) *AuthHandler {
+	return &AuthHandler{authServer: authServer}
 }
 
 func (obj AuthHandler) Login(w http.ResponseWriter, r *http.Request) {

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
-	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UserRepository interface {
@@ -23,10 +23,10 @@ type SettingsRepository interface {
 }
 
 type UserPostgres struct {
-	db database.DB
+	db *pgxpool.Pool
 }
 
-func NewUserPostgres(db database.DB) *UserPostgres {
+func NewUserPostgres(db *pgxpool.Pool) *UserPostgres {
 	return &UserPostgres{db: db}
 }
 
@@ -51,10 +51,10 @@ func (obj UserPostgres) Update(ctx context.Context, user domain.User) error {
 }
 
 type SettingsPostgres struct {
-	db database.DB
+	db *pgxpool.Pool
 }
 
-func NewSettingsPostgres(db database.DB) *SettingsPostgres {
+func NewSettingsPostgres(db *pgxpool.Pool) *SettingsPostgres {
 	return &SettingsPostgres{db: db}
 }
 

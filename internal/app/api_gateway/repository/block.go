@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
-	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type BlockRepository interface {
@@ -23,10 +23,10 @@ type BlockPartRepository interface {
 }
 
 type BlockPostgres struct {
-	db database.DB
+	db *pgxpool.Pool
 }
 
-func NewBlockPostgres(db database.DB) *BlockPostgres {
+func NewBlockPostgres(db *pgxpool.Pool) *BlockPostgres {
 	return &BlockPostgres{db: db}
 }
 
@@ -56,10 +56,10 @@ func (obj BlockPostgres) Delete(ctx context.Context, id int) error {
 }
 
 type BlockPartPostgres struct {
-	db database.DB
+	db *pgxpool.Pool
 }
 
-func NewBlockPartPostgres(db database.DB) *BlockPartPostgres {
+func NewBlockPartPostgres(db *pgxpool.Pool) *BlockPartPostgres {
 	return &BlockPartPostgres{db: db}
 }
 

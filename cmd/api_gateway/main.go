@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"time"
 
+	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	delivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
@@ -15,6 +17,8 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -68,6 +72,19 @@ func main() {
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
+	authConn, err := grpc.NewClient(
+		"auth:50051",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			d := net.Dialer{Timeout: 10 * time.Second}
+			return d.DialContext(ctx, "tcp4", addr)
+		}),
+	)
+	if err != nil {
+		log.Fatal("Failed to connect to auth service", zap.Error(err))
+	}
+	authClient := authpb.NewAuthClient(authConn)
+
 	userRepo := repository.NewUserPostgres(dbPool)
 	settingsRepo := repository.NewSettingsPostgres(dbPool)
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
@@ -87,7 +104,7 @@ func main() {
 	userHandler := delivery.NewUserHandler(userUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase)
 	adminHandler := delivery.NewAdminHandler(notificationUseCase)
-	authHandler := delivery.NewAuthHandler(userUseCase)
+	authHandler := delivery.NewAuthHandler(authClient)
 	log.Info("Handler initialized")
 	_ = settingsUseCase
 	_ = clusterUseCase
@@ -104,7 +121,7 @@ func main() {
 	})
 	mux.HandleFunc("POST /auth/login", authHandler.Login)
 	mux.HandleFunc("POST /auth/refresh", authHandler.Refresh)
-	mux.HandleFunc("POST auth/register", authHandler.Register)
+	mux.HandleFunc("POST /auth/register", authHandler.Register)
 	mux.HandleFunc("POST /auth/logout", authHandler.Logout)
 	mux.HandleFunc("GET /profile", userHandler.GetProfile)
 	mux.HandleFunc("POST /profile", userHandler.UpdateProfile)

@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
-	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DigestRepository interface {
@@ -15,10 +15,10 @@ type DigestRepository interface {
 }
 
 type DigestPostgres struct {
-	db database.DB
+	db *pgxpool.Pool
 }
 
-func NewDigestPostgres(db database.DB) *DigestPostgres {
+func NewDigestPostgres(db *pgxpool.Pool) *DigestPostgres {
 	return &DigestPostgres{db: db}
 }
 
