@@ -158,3 +158,6 @@ $RECYCLE.BIN/
 .idea
 /migrations/run_tern.ps1
 /.env
+/log/*
+/docker-compose.override.yaml
+/postgres-logs/*

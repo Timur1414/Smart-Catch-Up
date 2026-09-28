@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -75,7 +76,7 @@ func GetLoggerWithRequestId(ctx context.Context) *zap.Logger {
 	if logger == nil {
 		return zap.NewNop()
 	}
-	requestId, ok := ctx.Value("request_id").(string)
+	requestId, ok := ctx.Value(context_helper.ContextKeyRequestId).(string)
 	if !ok {
 		return logger
 	}
