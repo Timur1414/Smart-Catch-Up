@@ -26,11 +26,12 @@ services:
     image: redis:8.8.3-alpine3.23
     container_name: redis
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping" ]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD}
     expose:
       - "6379"
     volumes:
@@ -57,10 +58,36 @@ services:
     networks:
       - scu-network
 
+  auth:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile_auth
+    container_name: auth
+    restart: always
+    depends_on:
+      redis:
+        condition: service_healthy
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    expose:
+      - "50051"
+    volumes:
+      - ./log:/app/log
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - scu-network
+
   api-gateway:
     build:
       context: .
-      dockerfile: ./deployments/docker/Dockerfile.api_gateway
+      dockerfile: deployments/docker/Dockerfile_api_gateway
     container_name: api-gateway
     restart: always
     depends_on:
@@ -70,6 +97,8 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
+      auth:
+        condition: service_started
     read_only: true
     security_opt:
       - no-new-privileges:true

@@ -12,10 +12,10 @@ import (
 type AuthServer struct {
 	authpb.UnimplementedAuthServer
 	userUsecase  usecase.UserUseCase
-	tokenUsecase usecase.RefreshTokenUseCase
+	tokenUsecase usecase.JwtUseCase
 }
 
-func NewAuthServer(userUseCase usecase.UserUseCase, tokenUseCase usecase.RefreshTokenUseCase) *AuthServer {
+func NewAuthServer(userUseCase usecase.UserUseCase, tokenUseCase usecase.JwtUseCase) *AuthServer {
 	return &AuthServer{
 		userUsecase:  userUseCase,
 		tokenUsecase: tokenUseCase,

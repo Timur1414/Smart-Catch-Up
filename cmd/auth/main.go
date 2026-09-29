@@ -76,7 +76,7 @@ func main() {
 	jwtRepo := repository.NewRefreshTokenRedis(redisClient)
 	log.Info("Repository initialized")
 	userUseCase := usecase.NewUser(userRepo)
-	jwtUseCase := usecase.NewRefreshToken(jwtRepo)
+	jwtUseCase := usecase.NewJwt(jwtRepo)
 	log.Info("UseCase initialized")
 	authGrpcServer := authDelivery.NewAuthServer(userUseCase, jwtUseCase)
 	log.Info("Auth gRPC server initialized")

@@ -7,37 +7,49 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/repository"
 )
 
-type RefreshTokenUseCase interface {
+type JwtUseCase interface {
 	Create(ctx context.Context, user domain.User) (string, error)
 	GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error)
 	DeleteByUuid(ctx context.Context, uuid string) error
 	DeleteByUser(ctx context.Context, user domain.User) error
+	CheckAccessToken(tokenStr string) (bool, int)
+	CheckRefreshToken(ctx context.Context, tokenStr string) (bool, int)
 }
 
-type RefreshToken struct {
+type Jwt struct {
 	repository repository.RefreshTokenRepository
 }
 
-func NewRefreshToken(repo repository.RefreshTokenRepository) *RefreshToken {
-	return &RefreshToken{repository: repo}
+func NewJwt(repo repository.RefreshTokenRepository) *Jwt {
+	return &Jwt{repository: repo}
 }
 
-func (obj RefreshToken) Create(ctx context.Context, user domain.User) (string, error) {
+func (obj Jwt) Create(ctx context.Context, user domain.User) (string, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj RefreshToken) GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error) {
+func (obj Jwt) GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj RefreshToken) DeleteByUuid(ctx context.Context, uuid string) error {
+func (obj Jwt) DeleteByUuid(ctx context.Context, uuid string) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj RefreshToken) DeleteByUser(ctx context.Context, user domain.User) error {
+func (obj Jwt) DeleteByUser(ctx context.Context, user domain.User) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (obj Jwt) CheckAccessToken(tokenStr string) (bool, int) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (obj Jwt) CheckRefreshToken(ctx context.Context, tokenStr string) (bool, int) {
 	//TODO implement me
 	panic("implement me")
 }
