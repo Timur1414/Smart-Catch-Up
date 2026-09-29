@@ -21,17 +21,17 @@ func NewClusterPostgres(db *pgxpool.Pool) *ClusterPostgres {
 	return &ClusterPostgres{db: db}
 }
 
-func (obj ClusterPostgres) GetById(ctx context.Context, id int) (domain.Cluster, error) {
+func (obj *ClusterPostgres) GetById(ctx context.Context, id int) (domain.Cluster, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj ClusterPostgres) GetByType(ctx context.Context, clusterType string) (domain.Cluster, error) {
+func (obj *ClusterPostgres) GetByType(ctx context.Context, clusterType string) (domain.Cluster, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj ClusterPostgres) GetAll(ctx context.Context) ([]domain.Cluster, error) {
+func (obj *ClusterPostgres) GetAll(ctx context.Context) ([]domain.Cluster, error) {
 	//TODO implement me
 	panic("implement me")
 }

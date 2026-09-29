@@ -22,22 +22,22 @@ func NewDigest(repo repository.DigestRepository) *Digest {
 	return &Digest{repository: repo}
 }
 
-func (obj Digest) Create(ctx context.Context, digest domain.Digest) (int, error) {
+func (obj *Digest) Create(ctx context.Context, digest domain.Digest) (int, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj Digest) GetById(ctx context.Context, id int) (domain.Digest, error) {
+func (obj *Digest) GetById(ctx context.Context, id int) (domain.Digest, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj Digest) GetByUser(ctx context.Context, user domain.User) (domain.Digest, error) {
+func (obj *Digest) GetByUser(ctx context.Context, user domain.User) (domain.Digest, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj Digest) Update(ctx context.Context, digest domain.Digest) error {
+func (obj *Digest) Update(ctx context.Context, digest domain.Digest) error {
 	//TODO implement me
 	panic("implement me")
 }

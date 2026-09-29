@@ -22,22 +22,22 @@ func NewUserPostgres(db *pgxpool.Pool) *UserPostgres {
 	return &UserPostgres{db: db}
 }
 
-func (obj UserPostgres) Create(ctx context.Context, user domain.User) (int, error) {
+func (obj *UserPostgres) Create(ctx context.Context, user domain.User) (int, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj UserPostgres) GetById(ctx context.Context, id int) (domain.User, error) {
+func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj UserPostgres) GetByEmail(ctx context.Context, email string) (domain.User, error) {
+func (obj *UserPostgres) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj UserPostgres) Update(ctx context.Context, user domain.User) error {
+func (obj *UserPostgres) Update(ctx context.Context, user domain.User) error {
 	//TODO implement me
 	panic("implement me")
 }

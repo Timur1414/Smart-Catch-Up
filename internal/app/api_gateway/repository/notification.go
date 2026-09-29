@@ -22,22 +22,22 @@ func NewNotificationPostgres(db *pgxpool.Pool) *NotificationPostgres {
 	return &NotificationPostgres{db: db}
 }
 
-func (obj NotificationPostgres) Create(ctx context.Context, notification domain.Notification) (int, error) {
+func (obj *NotificationPostgres) Create(ctx context.Context, notification domain.Notification) (int, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj NotificationPostgres) GetById(ctx context.Context, id int) (domain.Settings, error) {
+func (obj *NotificationPostgres) GetById(ctx context.Context, id int) (domain.Settings, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj NotificationPostgres) GetByUser(ctx context.Context, user domain.User) (domain.Settings, error) {
+func (obj *NotificationPostgres) GetByUser(ctx context.Context, user domain.User) (domain.Settings, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj NotificationPostgres) Update(ctx context.Context, settings domain.Settings) error {
+func (obj *NotificationPostgres) Update(ctx context.Context, settings domain.Settings) error {
 	//TODO implement me
 	panic("implement me")
 }

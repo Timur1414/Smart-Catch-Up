@@ -19,7 +19,7 @@ func NewUserHandler(usecase usecase.UserUseCase) *UserHandler {
 	return &UserHandler{usecase: usecase}
 }
 
-func (obj UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
+func (obj *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Get profile request")
 	user := domain.User{
@@ -46,17 +46,17 @@ func (obj UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
 
-func (obj UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+func (obj *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Update profile request")
 }
 
-func (obj UserHandler) UpdateProfileAvatar(w http.ResponseWriter, r *http.Request) {
+func (obj *UserHandler) UpdateProfileAvatar(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Update profile avatar")
 }
 
-func (obj UserHandler) IsStaff(w http.ResponseWriter, r *http.Request) {
+func (obj *UserHandler) IsStaff(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Is staff request")
 	user := domain.User{

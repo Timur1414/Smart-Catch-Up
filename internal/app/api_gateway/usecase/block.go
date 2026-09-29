@@ -63,22 +63,22 @@ func NewBlockPart(repo repository.BlockPartRepository) *BlockPart {
 	return &BlockPart{repository: repo}
 }
 
-func (obj BlockPart) Create(ctx context.Context, blockPart domain.BlockPart) (int, error) {
+func (obj *BlockPart) Create(ctx context.Context, blockPart domain.BlockPart) (int, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj BlockPart) GetById(ctx context.Context, id int) (domain.BlockPart, error) {
+func (obj *BlockPart) GetById(ctx context.Context, id int) (domain.BlockPart, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj BlockPart) GetByBlock(ctx context.Context, block domain.Block) (domain.BlockPart, error) {
+func (obj *BlockPart) GetByBlock(ctx context.Context, block domain.Block) (domain.BlockPart, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj BlockPart) GetByType(ctx context.Context, clusterType string) (domain.BlockPart, error) {
+func (obj *BlockPart) GetByType(ctx context.Context, clusterType string) (domain.BlockPart, error) {
 	//TODO implement me
 	panic("implement me")
 }

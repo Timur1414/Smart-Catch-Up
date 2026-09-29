@@ -22,7 +22,7 @@ func NewAuthServer(userUseCase usecase.UserUseCase, tokenUseCase usecase.JwtUseC
 	}
 }
 
-func (obj AuthServer) Register(ctx context.Context, request *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
+func (obj *AuthServer) Register(ctx context.Context, request *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
 	if request.GetEmail() == "" || request.GetPassword() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
@@ -33,7 +33,7 @@ func (obj AuthServer) Register(ctx context.Context, request *authpb.RegisterRequ
 	}, nil
 }
 
-func (obj AuthServer) Login(ctx context.Context, request *authpb.LoginRequest) (*authpb.LoginResponse, error) {
+func (obj *AuthServer) Login(ctx context.Context, request *authpb.LoginRequest) (*authpb.LoginResponse, error) {
 	if request.GetEmail() == "" || request.GetPassword() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
@@ -48,7 +48,7 @@ func (obj AuthServer) Login(ctx context.Context, request *authpb.LoginRequest) (
 	}, nil
 }
 
-func (obj AuthServer) Refresh(ctx context.Context, request *authpb.RefreshRequest) (*authpb.RefreshResponse, error) {
+func (obj *AuthServer) Refresh(ctx context.Context, request *authpb.RefreshRequest) (*authpb.RefreshResponse, error) {
 	if request.GetRefreshToken() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
@@ -59,7 +59,7 @@ func (obj AuthServer) Refresh(ctx context.Context, request *authpb.RefreshReques
 	}, nil
 }
 
-func (obj AuthServer) Logout(ctx context.Context, request *authpb.LogoutRequest) (*authpb.LogoutResponse, error) {
+func (obj *AuthServer) Logout(ctx context.Context, request *authpb.LogoutRequest) (*authpb.LogoutResponse, error) {
 	if request.GetUserId() == 0 || request.GetAccessToken() == "" || request.GetRefreshToken() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
