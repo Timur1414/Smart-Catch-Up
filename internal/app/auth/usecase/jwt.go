@@ -5,17 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/repository"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 type JwtUseCase interface {
 	CreatePair(ctx context.Context, user domain.User) (string, string, error)
-	UpdateAccessToken(ctx context.Context, user domain.User) (string, error)
+	CreateAccessToken(ctx context.Context, user domain.User) (string, error)
 	GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error)
 	DeleteByUuid(ctx context.Context, uuid string) error
 	DeleteByUser(ctx context.Context, user domain.User) error
@@ -45,13 +47,56 @@ func NewJwt(repo repository.RefreshTokenRepository, secret string, version strin
 }
 
 func (obj *Jwt) CreatePair(ctx context.Context, user domain.User) (string, string, error) {
-	//TODO implement me
-	panic("implement me")
+	log := logger.GetLoggerWithRequestId(ctx)
+	accessExpirationTime := time.Now().Add(time.Hour)
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"exp":     accessExpirationTime.Unix(),
+		"user_id": user.Id,
+		"version": obj.GetVersion(),
+	})
+	accessTokenStr, err := accessToken.SignedString(obj.GetSecret())
+	if err != nil {
+		log.Error("failed to sign access token",
+			zap.Int("user_id", user.Id),
+			zap.Error(err))
+		return "", "", err
+	}
+
+	//TODO инвалидировать прошлый токен
+	refreshExpirationTime := time.Now().Add(time.Hour * 2)
+	refreshId := uuid.New().String()
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"exp":     refreshExpirationTime.Unix(),
+		"id":      refreshId,
+		"user_id": user.Id,
+		"version": obj.GetVersion(),
+	})
+	refreshTokenStr, err := refreshToken.SignedString(obj.GetSecret())
+	if err != nil {
+		log.Error("failed to sign refresh token",
+			zap.Int("user_id", user.Id),
+			zap.Error(err))
+		return "", "", err
+	}
+	return accessTokenStr, refreshTokenStr, nil
 }
 
-func (obj *Jwt) UpdateAccessToken(ctx context.Context, user domain.User) (string, error) {
-	//TODO implement me
-	panic("implement me")
+func (obj *Jwt) CreateAccessToken(ctx context.Context, user domain.User) (string, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	accessExpirationTime := time.Now().Add(time.Hour)
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"exp":     accessExpirationTime.Unix(),
+		"user_id": user.Id,
+		"version": obj.GetVersion(),
+	})
+	accessTokenStr, err := accessToken.SignedString(obj.GetSecret())
+	if err != nil {
+		log.Error("failed to sign access token",
+			zap.Int("user_id", user.Id),
+			zap.Error(err))
+		return "", err
+	}
+	return accessTokenStr, nil
 }
 
 func (obj *Jwt) GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error) {
@@ -147,6 +192,10 @@ func (obj *Jwt) CheckRefreshToken(ctx context.Context, tokenStr string) (bool, i
 	if err != nil {
 		return false, -1
 	}
+	if storedToken.ExpiredAt.Before(time.Now()) {
+		log.Warn("token is expired")
+		return false, -1
+	}
 	if storedToken.UserId != userId {
 		log.Error("invalid token (invalid userId)")
 		return false, -1
@@ -158,4 +207,10 @@ func (obj *Jwt) GetVersion() string {
 	obj.mu.RLock()
 	defer obj.mu.RUnlock()
 	return obj.version
+}
+
+func (obj *Jwt) GetSecret() []byte {
+	obj.mu.RLock()
+	defer obj.mu.RUnlock()
+	return obj.secret
 }
