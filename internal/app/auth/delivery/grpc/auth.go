@@ -5,6 +5,8 @@ import (
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/usecase"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -60,9 +62,17 @@ func (obj *AuthServer) Refresh(ctx context.Context, request *authpb.RefreshReque
 }
 
 func (obj *AuthServer) Logout(ctx context.Context, request *authpb.LogoutRequest) (*authpb.LogoutResponse, error) {
+	log := logger.GetLogger()
 	if request.GetUserId() == 0 || request.GetAccessToken() == "" || request.GetRefreshToken() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
+	err := obj.tokenUsecase.DeleteByUuid(ctx, request.GetRefreshToken())
+	if err != nil {
+		return &authpb.LogoutResponse{
+			Success: false,
+		}, err
+	}
+	log.Info("Logout", zap.Int64("user_id", request.GetUserId()))
 	return &authpb.LogoutResponse{
 		Success: true,
 	}, nil

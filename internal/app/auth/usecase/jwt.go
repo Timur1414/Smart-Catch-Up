@@ -16,7 +16,7 @@ import (
 )
 
 type JwtUseCase interface {
-	CreatePair(ctx context.Context, user domain.User) (string, string, error)
+	CreatePair(ctx context.Context, user domain.User, oldRefreshId string) (string, string, error)
 	CreateAccessToken(ctx context.Context, user domain.User) (string, error)
 	GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error)
 	DeleteByUuid(ctx context.Context, uuid string) error
@@ -46,8 +46,14 @@ func NewJwt(repo repository.RefreshTokenRepository, secret string, version strin
 	}, nil
 }
 
-func (obj *Jwt) CreatePair(ctx context.Context, user domain.User) (string, string, error) {
+func (obj *Jwt) CreatePair(ctx context.Context, user domain.User, oldRefreshId string) (string, string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
+
+	err := obj.repository.DeleteByUuid(ctx, oldRefreshId)
+	if err != nil {
+		return "", "", err
+	}
+
 	accessExpirationTime := time.Now().Add(time.Hour)
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"exp":     accessExpirationTime.Unix(),
@@ -62,7 +68,6 @@ func (obj *Jwt) CreatePair(ctx context.Context, user domain.User) (string, strin
 		return "", "", err
 	}
 
-	//TODO инвалидировать прошлый токен
 	refreshExpirationTime := time.Now().Add(time.Hour * 2)
 	refreshId := uuid.New().String()
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

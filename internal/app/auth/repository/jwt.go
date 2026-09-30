@@ -30,7 +30,7 @@ func NewRefreshTokenRedis(client *redis.Client) *RefreshTokenRedis {
 func (obj *RefreshTokenRedis) Create(ctx context.Context, token domain.RefreshToken) (string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
 	startTime := time.Now()
-	err := obj.db.Set(ctx, token.Uuid, token.UserId, time.Hour).Err()
+	err := obj.db.Set(ctx, token.Uuid, token.UserId, time.Hour).Err() // TODO swap key and value
 	duration := time.Since(startTime)
 	if err != nil {
 		log.Warn("Failed to create jwt", zap.Error(err))
