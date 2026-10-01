@@ -18,6 +18,8 @@ type AuthServer struct {
 	tokenUsecase usecase.JwtUseCase
 }
 
+// TODO gRPC with tls
+
 func NewAuthServer(userUseCase usecase.UserUseCase, tokenUseCase usecase.JwtUseCase) *AuthServer {
 	return &AuthServer{
 		userUsecase:  userUseCase,
