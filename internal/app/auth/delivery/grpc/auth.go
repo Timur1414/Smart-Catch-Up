@@ -18,8 +18,6 @@ type AuthServer struct {
 	tokenUsecase usecase.JwtUseCase
 }
 
-// TODO gRPC with tls
-
 func NewAuthServer(userUseCase usecase.UserUseCase, tokenUseCase usecase.JwtUseCase) *AuthServer {
 	return &AuthServer{
 		userUsecase:  userUseCase,
@@ -35,7 +33,7 @@ func (obj *AuthServer) Register(ctx context.Context, request *authpb.RegisterReq
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	accessToken, refreshToken, err := obj.tokenUsecase.CreatePairByUser(ctx, userId)
+	accessToken, refreshToken, err := obj.tokenUsecase.CreatePair(ctx, userId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -54,7 +52,7 @@ func (obj *AuthServer) Login(ctx context.Context, request *authpb.LoginRequest) 
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
 	}
-	accessToken, refreshToken, err := obj.tokenUsecase.CreatePairByUser(ctx, user.Id)
+	accessToken, refreshToken, err := obj.tokenUsecase.CreatePair(ctx, user.Id)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
 	}
@@ -69,7 +67,11 @@ func (obj *AuthServer) Refresh(ctx context.Context, request *authpb.RefreshReque
 	if request.GetRefreshToken() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
-	accessToken, refreshToken, err := obj.tokenUsecase.CreatePairByRefreshToken(ctx, request.GetRefreshToken())
+	ok, userId := obj.tokenUsecase.CheckRefreshToken(ctx, request.GetRefreshToken())
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid refresh token")
+	}
+	accessToken, refreshToken, err := obj.tokenUsecase.CreatePair(ctx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -94,5 +96,19 @@ func (obj *AuthServer) Logout(ctx context.Context, request *authpb.LogoutRequest
 	log.Info("Logout", zap.Int64("user_id", request.GetUserId()))
 	return &authpb.LogoutResponse{
 		Success: true,
+	}, nil
+}
+
+func (obj *AuthServer) IsAuth(ctx context.Context, request *authpb.IsAuthRequest) (*authpb.IsAuthResponse, error) {
+	if request.GetAccessToken() == "" {
+		return nil, status.Error(codes.InvalidArgument, "access token is required")
+	}
+	ok, userId := obj.tokenUsecase.CheckAccessToken(ctx, request.GetAccessToken())
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid access token")
+	}
+	return &authpb.IsAuthResponse{
+		IsAuth: true,
+		UserId: int64(userId),
 	}, nil
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
@@ -76,5 +77,21 @@ func AccessLogMiddleware(next http.Handler) http.Handler {
 			zap.String("request_id", requestId),
 			zap.Int("status_code", wr.StatusCode),
 			zap.String("duration", duration.String()))
+	})
+}
+
+func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := logger.GetLogger()
+		path := r.URL.Path
+		authResponse, err := authServer.IsAuth(r.Context(), &authpb.IsAuthRequest{AccessToken: ""})
+		if err != nil || !authResponse.IsAuth {
+			response := web_helpers.NewUnauthorizedResponse("")
+			web_helpers.WriteResponseJSON(w, response.Code, response)
+			return
+		}
+		ctx := context.WithValue(r.Context(), context_helper.ContextKeyUser, authResponse.UserId)
+		log.Info("[auth middleware] auth success]", zap.Int64("user_id", authResponse.UserId), zap.String("path", path))
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

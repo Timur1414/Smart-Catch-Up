@@ -131,7 +131,8 @@ func main() {
 	mux.HandleFunc("POST /admin/generate", adminHandler.Generate1)
 	mux.HandleFunc("POST /admin/generate_n", adminHandler.GenerateN)
 
-	handler := middleware.AccessLogMiddleware(mux)
+	handler := middleware.AuthMiddleware(mux, authClient)
+	handler = middleware.AccessLogMiddleware(mux)
 	handler = middleware.PanicMiddleware(handler)
 
 	addr := ":" + os.Getenv("PORT")

@@ -17,8 +17,7 @@ import (
 )
 
 type JwtUseCase interface {
-	CreatePairByUser(ctx context.Context, userId int) (string, string, error)
-	CreatePairByRefreshToken(ctx context.Context, token string) (string, string, error)
+	CreatePair(ctx context.Context, userId int) (string, string, error)
 	DeleteRefreshToken(ctx context.Context, refreshToken string) error
 	CheckAccessToken(ctx context.Context, tokenStr string) (bool, int)
 	CheckRefreshToken(ctx context.Context, tokenStr string) (bool, int)
@@ -46,7 +45,7 @@ func NewJwt(repo repository.RefreshTokenRepository, secret string, version strin
 	}, nil
 }
 
-func (obj *Jwt) CreatePairByUser(ctx context.Context, userId int) (string, string, error) {
+func (obj *Jwt) CreatePair(ctx context.Context, userId int) (string, string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
 	userIdStr := strconv.Itoa(userId)
 
@@ -99,20 +98,6 @@ func (obj *Jwt) CreatePairByUser(ctx context.Context, userId int) (string, strin
 	}
 
 	return accessTokenStr, refreshTokenStr, nil
-}
-
-func (obj *Jwt) CreatePairByRefreshToken(ctx context.Context, refreshToken string) (string, string, error) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	claims, err := obj.ExtractClaims(ctx, refreshToken)
-	if err != nil {
-		return "", "", err
-	}
-	userId, err := strconv.Atoi(claims.Subject)
-	if err != nil {
-		log.Warn("failed to convert user to int", zap.Error(err))
-		return "", "", err
-	}
-	return obj.CreatePairByUser(ctx, userId)
 }
 
 func (obj *Jwt) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
