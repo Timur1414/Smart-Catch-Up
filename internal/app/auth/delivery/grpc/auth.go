@@ -28,10 +28,15 @@ func (obj *AuthServer) Register(ctx context.Context, request *authpb.RegisterReq
 	if request.GetEmail() == "" || request.GetPassword() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
+	userId := 1
+	accessToken, refreshToken, err := obj.tokenUsecase.CreatePairByUser(ctx, userId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	return &authpb.RegisterResponse{
-		UserId:       1,
-		AccessToken:  "token",
-		RefreshToken: "token",
+		UserId:       int64(userId),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
 
@@ -43,10 +48,14 @@ func (obj *AuthServer) Login(ctx context.Context, request *authpb.LoginRequest) 
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
 	}
+	accessToken, refreshToken, err := obj.tokenUsecase.CreatePairByUser(ctx, user.Id)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
+	}
 	return &authpb.LoginResponse{
 		UserId:       int64(user.Id),
-		AccessToken:  "token",
-		RefreshToken: "token",
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
 
@@ -54,10 +63,14 @@ func (obj *AuthServer) Refresh(ctx context.Context, request *authpb.RefreshReque
 	if request.GetRefreshToken() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
+	accessToken, refreshToken, err := obj.tokenUsecase.CreatePairByRefreshToken(ctx, request.GetRefreshToken())
+	if err != nil {
+		return nil, err
+	}
 	return &authpb.RefreshResponse{
 		UserId:       1,
-		AccessToken:  "token",
-		RefreshToken: "token",
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}, nil
 }
 

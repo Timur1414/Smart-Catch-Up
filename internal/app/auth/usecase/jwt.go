@@ -17,7 +17,8 @@ import (
 )
 
 type JwtUseCase interface {
-	CreatePair(ctx context.Context, user domain.User) (string, string, error)
+	CreatePairByUser(ctx context.Context, userId int) (string, string, error)
+	CreatePairByRefreshToken(ctx context.Context, token string) (string, string, error)
 	CreateAccessToken(ctx context.Context, user domain.User) (string, error)
 	DeleteRefreshToken(ctx context.Context, refreshToken string) error
 	CheckAccessToken(tokenStr string) (bool, int)
@@ -46,11 +47,11 @@ func NewJwt(repo repository.RefreshTokenRepository, secret string, version strin
 	}, nil
 }
 
-func (obj *Jwt) CreatePair(ctx context.Context, user domain.User) (string, string, error) {
+func (obj *Jwt) CreatePairByUser(ctx context.Context, userId int) (string, string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	userIdStr := strconv.Itoa(user.Id)
+	userIdStr := strconv.Itoa(userId)
 
-	err := obj.repository.DeleteByUser(ctx, user.Id)
+	err := obj.repository.DeleteByUser(ctx, userId)
 	if err != nil {
 		return "", "", err
 	}
@@ -65,7 +66,7 @@ func (obj *Jwt) CreatePair(ctx context.Context, user domain.User) (string, strin
 	accessTokenStr, err := accessToken.SignedString(obj.GetSecret())
 	if err != nil {
 		log.Error("failed to sign access token",
-			zap.Int("user_id", user.Id),
+			zap.Int("user_id", userId),
 			zap.Error(err))
 		return "", "", err
 	}
@@ -83,14 +84,14 @@ func (obj *Jwt) CreatePair(ctx context.Context, user domain.User) (string, strin
 	refreshTokenStr, err := refreshToken.SignedString(obj.GetSecret())
 	if err != nil {
 		log.Error("failed to sign refresh token",
-			zap.Int("user_id", user.Id),
+			zap.Int("user_id", userId),
 			zap.Error(err))
 		return "", "", err
 	}
 
 	refreshTokenToSave := domain.RefreshToken{
 		Uuid:      refreshId,
-		UserId:    user.Id,
+		UserId:    userId,
 		ExpiredAt: refreshExpirationTime,
 	}
 	_, err = obj.repository.Create(ctx, refreshTokenToSave)
@@ -99,6 +100,20 @@ func (obj *Jwt) CreatePair(ctx context.Context, user domain.User) (string, strin
 	}
 
 	return accessTokenStr, refreshTokenStr, nil
+}
+
+func (obj *Jwt) CreatePairByRefreshToken(ctx context.Context, refreshToken string) (string, string, error) {
+	log := logger.GetLogger()
+	claims, err := obj.ExtractClaims(refreshToken)
+	if err != nil {
+		return "", "", err
+	}
+	userId, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		log.Warn("failed to convert user to int", zap.Error(err))
+		return "", "", err
+	}
+	return obj.CreatePairByUser(ctx, userId)
 }
 
 func (obj *Jwt) CreateAccessToken(ctx context.Context, user domain.User) (string, error) {
@@ -130,7 +145,7 @@ func (obj *Jwt) DeleteRefreshToken(ctx context.Context, refreshToken string) err
 	}
 	userId, err := strconv.Atoi(claims.Subject)
 	if err != nil {
-		log.Warn("failed to convert subject to int", zap.String("subject", claims.Subject))
+		log.Warn("failed to convert subject to int", zap.Error(err))
 		return err
 	}
 	return obj.repository.DeleteByUser(ctx, userId)
