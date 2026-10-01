@@ -4,6 +4,7 @@ import (
 	"context"
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"go.uber.org/zap"
@@ -28,7 +29,10 @@ func (obj *AuthServer) Register(ctx context.Context, request *authpb.RegisterReq
 	if request.GetEmail() == "" || request.GetPassword() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
-	userId := 1
+	userId, err := obj.userUsecase.Create(ctx, domain.User{Email: request.GetEmail(), Password: request.GetPassword()})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	accessToken, refreshToken, err := obj.tokenUsecase.CreatePairByUser(ctx, userId)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
