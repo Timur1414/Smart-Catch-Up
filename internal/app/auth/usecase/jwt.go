@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
@@ -16,13 +17,12 @@ import (
 )
 
 type JwtUseCase interface {
-	CreatePair(ctx context.Context, user domain.User, oldRefreshId string) (string, string, error)
+	CreatePair(ctx context.Context, user domain.User) (string, string, error)
 	CreateAccessToken(ctx context.Context, user domain.User) (string, error)
-	GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error)
-	DeleteByUuid(ctx context.Context, uuid string) error
-	DeleteByUser(ctx context.Context, user domain.User) error
-	CheckAccessToken(ctx context.Context, tokenStr string) (bool, int)
+	DeleteRefreshToken(ctx context.Context, refreshToken string) error
+	CheckAccessToken(tokenStr string) (bool, int)
 	CheckRefreshToken(ctx context.Context, tokenStr string) (bool, int)
+	ExtractClaims(tokenStr string) (jwt.RegisteredClaims, error)
 }
 
 type Jwt struct {
@@ -46,20 +46,22 @@ func NewJwt(repo repository.RefreshTokenRepository, secret string, version strin
 	}, nil
 }
 
-func (obj *Jwt) CreatePair(ctx context.Context, user domain.User, oldRefreshId string) (string, string, error) {
+func (obj *Jwt) CreatePair(ctx context.Context, user domain.User) (string, string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
+	userIdStr := strconv.Itoa(user.Id)
 
-	err := obj.repository.DeleteByUuid(ctx, oldRefreshId)
+	err := obj.repository.DeleteByUser(ctx, user.Id)
 	if err != nil {
 		return "", "", err
 	}
 
-	accessExpirationTime := time.Now().Add(time.Hour)
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"exp":     accessExpirationTime.Unix(),
-		"user_id": user.Id,
-		"version": obj.GetVersion(),
-	})
+	claims := jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Issuer:    obj.GetVersion(),
+		Subject:   userIdStr,
+	}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	accessTokenStr, err := accessToken.SignedString(obj.GetSecret())
 	if err != nil {
 		log.Error("failed to sign access token",
@@ -70,12 +72,14 @@ func (obj *Jwt) CreatePair(ctx context.Context, user domain.User, oldRefreshId s
 
 	refreshExpirationTime := time.Now().Add(time.Hour * 2)
 	refreshId := uuid.New().String()
-	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"exp":     refreshExpirationTime.Unix(),
-		"id":      refreshId,
-		"user_id": user.Id,
-		"version": obj.GetVersion(),
-	})
+	refreshClaims := jwt.RegisteredClaims{
+		ID:        refreshId,
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Issuer:    obj.GetVersion(),
+		Subject:   userIdStr,
+	}
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
 	refreshTokenStr, err := refreshToken.SignedString(obj.GetSecret())
 	if err != nil {
 		log.Error("failed to sign refresh token",
@@ -83,17 +87,31 @@ func (obj *Jwt) CreatePair(ctx context.Context, user domain.User, oldRefreshId s
 			zap.Error(err))
 		return "", "", err
 	}
+
+	refreshTokenToSave := domain.RefreshToken{
+		Uuid:      refreshId,
+		UserId:    user.Id,
+		ExpiredAt: refreshExpirationTime,
+	}
+	_, err = obj.repository.Create(ctx, refreshTokenToSave)
+	if err != nil {
+		return "", "", err
+	}
+
 	return accessTokenStr, refreshTokenStr, nil
 }
 
 func (obj *Jwt) CreateAccessToken(ctx context.Context, user domain.User) (string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	accessExpirationTime := time.Now().Add(time.Hour)
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"exp":     accessExpirationTime.Unix(),
-		"user_id": user.Id,
-		"version": obj.GetVersion(),
-	})
+	userIdStr := strconv.Itoa(user.Id)
+
+	claims := jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		Issuer:    obj.GetVersion(),
+		Subject:   userIdStr,
+	}
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	accessTokenStr, err := accessToken.SignedString(obj.GetSecret())
 	if err != nil {
 		log.Error("failed to sign access token",
@@ -104,96 +122,56 @@ func (obj *Jwt) CreateAccessToken(ctx context.Context, user domain.User) (string
 	return accessTokenStr, nil
 }
 
-func (obj *Jwt) GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error) {
-	return obj.repository.GetByUuid(ctx, uuid)
-}
-
-func (obj *Jwt) DeleteByUuid(ctx context.Context, uuid string) error {
-	return obj.repository.DeleteByUuid(ctx, uuid)
-}
-
-func (obj *Jwt) DeleteByUser(ctx context.Context, user domain.User) error {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (obj *Jwt) CheckAccessToken(ctx context.Context, tokenStr string) (bool, int) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			log.Warn("Unexpected signing method")
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return obj.secret, nil
-	})
+func (obj *Jwt) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
+	log := logger.GetLogger()
+	claims, err := obj.ExtractClaims(refreshToken)
 	if err != nil {
-		log.Warn("Token parse error", zap.Error(err))
+		return err
+	}
+	userId, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		log.Warn("failed to convert subject to int", zap.String("subject", claims.Subject))
+		return err
+	}
+	return obj.repository.DeleteByUser(ctx, userId)
+}
+
+func (obj *Jwt) CheckAccessToken(tokenStr string) (bool, int) {
+	log := logger.GetLogger()
+	claims, err := obj.ExtractClaims(tokenStr)
+	if err != nil {
 		return false, -1
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		log.Warn("invalid token")
-		return false, -1
-	}
-	version, ok := claims["version"].(string)
-	if !ok {
-		log.Warn("invalid token (unable to claim version)")
-		return false, -1
-	}
-	if version != obj.GetVersion() {
+	if claims.Issuer != obj.GetVersion() {
 		log.Warn("invalid token (invalid version)")
 		return false, -1
 	}
-	userIdFloat, ok := claims["user_id"].(float64)
-	if !ok {
-		log.Warn("invalid token (unable to claim user_id)")
+	userId, err := strconv.Atoi(claims.Subject)
+	if err != nil {
 		return false, -1
 	}
-	userId := int(userIdFloat)
 	return true, userId
 }
 
 func (obj *Jwt) CheckRefreshToken(ctx context.Context, tokenStr string) (bool, int) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (any, error) {
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			log.Warn("Unexpected signing method")
-			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
-		}
-		return obj.secret, nil
-	})
+	log := logger.GetLogger()
+	claims, err := obj.ExtractClaims(tokenStr)
 	if err != nil {
-		log.Warn("Token parse error", zap.Error(err))
 		return false, -1
 	}
 
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok || !token.Valid {
-		log.Error("invalid token (unable to claim payload)")
-		return false, -1
-	}
-	version, ok := claims["version"].(string)
-	if !ok {
-		log.Warn("invalid token (unable to claim version)")
-		return false, -1
-	}
-	if version != obj.GetVersion() {
+	if claims.Issuer != obj.GetVersion() {
 		log.Warn("invalid token (invalid version)")
 		return false, -1
 	}
-	userIdFloat, ok := claims["user_id"].(float64)
-	if !ok {
-		log.Warn("invalid token (unable to claim user_id)")
+
+	userId, err := strconv.Atoi(claims.Subject)
+	if err != nil {
 		return false, -1
 	}
-	userId := int(userIdFloat)
-	tokenId, ok := claims["id"].(string)
-	if !ok {
-		log.Error("invalid token (unable to claim token_id)")
-		return false, -1
-	}
-	storedToken, err := obj.repository.GetByUuid(ctx, tokenId)
+
+	storedToken, err := obj.repository.GetByUser(ctx, userId)
 	if err != nil {
 		return false, -1
 	}
@@ -201,11 +179,28 @@ func (obj *Jwt) CheckRefreshToken(ctx context.Context, tokenStr string) (bool, i
 		log.Warn("token is expired")
 		return false, -1
 	}
-	if storedToken.UserId != userId {
-		log.Error("invalid token (invalid userId)")
+	if storedToken.Uuid != claims.ID {
+		log.Warn("invalid token (invalid token Id)")
 		return false, -1
 	}
 	return true, userId
+}
+
+func (obj *Jwt) ExtractClaims(tokenStr string) (jwt.RegisteredClaims, error) {
+	log := logger.GetLogger()
+	var claims jwt.RegisteredClaims
+	token, err := jwt.ParseWithClaims(tokenStr, &claims, func(token *jwt.Token) (any, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			log.Warn("Unexpected signing method")
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+		return obj.GetSecret(), nil
+	})
+	if err != nil || !token.Valid {
+		log.Warn("Token parse error", zap.Error(err))
+		return jwt.RegisteredClaims{}, err
+	}
+	return claims, nil
 }
 
 func (obj *Jwt) GetVersion() string {

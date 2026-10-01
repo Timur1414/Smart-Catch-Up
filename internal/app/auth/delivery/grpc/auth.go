@@ -66,7 +66,7 @@ func (obj *AuthServer) Logout(ctx context.Context, request *authpb.LogoutRequest
 	if request.GetUserId() == 0 || request.GetAccessToken() == "" || request.GetRefreshToken() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
-	err := obj.tokenUsecase.DeleteByUuid(ctx, request.GetRefreshToken())
+	err := obj.tokenUsecase.DeleteRefreshToken(ctx, request.GetRefreshToken())
 	if err != nil {
 		return &authpb.LogoutResponse{
 			Success: false,

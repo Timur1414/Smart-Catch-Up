@@ -14,9 +14,8 @@ import (
 
 type RefreshTokenRepository interface {
 	Create(ctx context.Context, token domain.RefreshToken) (string, error)
-	GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error)
-	DeleteByUuid(ctx context.Context, uuid string) error
-	DeleteByUser(ctx context.Context, user domain.User) error
+	GetByUser(ctx context.Context, userId int) (domain.RefreshToken, error)
+	DeleteByUser(ctx context.Context, userId int) error
 }
 
 type RefreshTokenRedis struct {
@@ -30,7 +29,8 @@ func NewRefreshTokenRedis(client *redis.Client) *RefreshTokenRedis {
 func (obj *RefreshTokenRedis) Create(ctx context.Context, token domain.RefreshToken) (string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
 	startTime := time.Now()
-	err := obj.db.Set(ctx, token.Uuid, token.UserId, time.Hour).Err() // TODO swap key and value
+	key := strconv.Itoa(token.UserId)
+	err := obj.db.Set(ctx, key, token.Uuid, time.Hour).Err()
 	duration := time.Since(startTime)
 	if err != nil {
 		log.Warn("Failed to create jwt", zap.Error(err))
@@ -40,14 +40,15 @@ func (obj *RefreshTokenRedis) Create(ctx context.Context, token domain.RefreshTo
 	return token.Uuid, nil
 }
 
-func (obj *RefreshTokenRedis) GetByUuid(ctx context.Context, uuid string) (domain.RefreshToken, error) {
+func (obj *RefreshTokenRedis) GetByUser(ctx context.Context, userId int) (domain.RefreshToken, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	var userIdCmd *redis.StringCmd
+	var uuidCmd *redis.StringCmd
 	var ttlCmd *redis.DurationCmd
+	key := strconv.Itoa(userId)
 	startTime := time.Now()
 	_, err := obj.db.Pipelined(ctx, func(pipe redis.Pipeliner) error {
-		userIdCmd = pipe.Get(ctx, uuid)
-		ttlCmd = pipe.TTL(ctx, uuid)
+		uuidCmd = pipe.Get(ctx, key)
+		ttlCmd = pipe.TTL(ctx, key)
 		return nil
 	})
 	duration := time.Since(startTime)
@@ -57,7 +58,7 @@ func (obj *RefreshTokenRedis) GetByUuid(ctx context.Context, uuid string) (domai
 		log.Warn("Failed to get jwt", zap.Error(err))
 		return domain.RefreshToken{}, err
 	}
-	userId, err := userIdCmd.Result()
+	uuid, err := uuidCmd.Result()
 	if err != nil {
 		log.Warn("Failed to get jwt", zap.Error(err))
 		return domain.RefreshToken{}, err
@@ -67,34 +68,25 @@ func (obj *RefreshTokenRedis) GetByUuid(ctx context.Context, uuid string) (domai
 		log.Warn("Failed to get jwt", zap.Error(err))
 		return domain.RefreshToken{}, err
 	}
-	userIdInt, err := strconv.Atoi(userId)
-	if err != nil {
-		log.Warn("Failed to convert jwt", zap.Error(err))
-		return domain.RefreshToken{}, err
-	}
 	expiredAt := time.Now().Add(ttl)
 	log.Info("Get jwt", zap.String("uuid", uuid), zap.Duration("duration", duration))
 	return domain.RefreshToken{
 		Uuid:      uuid,
-		UserId:    userIdInt,
+		UserId:    userId,
 		ExpiredAt: expiredAt,
 	}, nil
 }
 
-func (obj *RefreshTokenRedis) DeleteByUuid(ctx context.Context, uuid string) error {
+func (obj *RefreshTokenRedis) DeleteByUser(ctx context.Context, userId int) error {
 	log := logger.GetLoggerWithRequestId(ctx)
 	startTime := time.Now()
-	err := obj.db.Del(ctx, uuid).Err()
+	key := strconv.Itoa(userId)
+	err := obj.db.Del(ctx, key).Err()
 	duration := time.Since(startTime)
 	if err != nil {
 		log.Warn("Failed to delete jwt", zap.Error(err))
 		return err
 	}
-	log.Info("Delete jwt", zap.String("uuid", uuid), zap.Duration("duration", duration))
+	log.Info("Delete jwt", zap.Duration("duration", duration))
 	return nil
-}
-
-func (obj *RefreshTokenRedis) DeleteByUser(ctx context.Context, user domain.User) error {
-	//TODO implement me
-	panic("implement me")
 }
