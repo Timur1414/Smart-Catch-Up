@@ -81,7 +81,7 @@ func (obj *AuthServer) Refresh(ctx context.Context, request *authpb.RefreshReque
 }
 
 func (obj *AuthServer) Logout(ctx context.Context, request *authpb.LogoutRequest) (*authpb.LogoutResponse, error) {
-	log := logger.GetLogger()
+	log := logger.GetLoggerWithRequestId(ctx)
 	if request.GetUserId() == 0 || request.GetAccessToken() == "" || request.GetRefreshToken() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}

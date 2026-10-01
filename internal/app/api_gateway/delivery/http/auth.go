@@ -7,6 +7,7 @@ import (
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"go.uber.org/zap"
 )
@@ -28,28 +29,89 @@ func NewAuthHandler(authServer authpb.AuthClient) *AuthHandler {
 
 func (obj *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	log.Info("Login request")
+	authResponse, err := obj.authServer.Login(r.Context(), &authpb.LoginRequest{
+		Email:    "",
+		Password: "",
+	})
+	if err != nil {
+		response := web_helpers.NewUnauthorizedResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	log.Info("Refresh request")
+	refreshToken, err := GetRefreshCookie(r.Context(), r)
+	if err != nil {
+		response := web_helpers.NewUnauthorizedResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	authResponse, err := obj.authServer.Refresh(r.Context(), &authpb.RefreshRequest{
+		RefreshToken: refreshToken.Value,
+	})
+	if err != nil {
+		response := web_helpers.NewUnauthorizedResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	log.Info("Register request")
+	authResponse, err := obj.authServer.Register(r.Context(), &authpb.RegisterRequest{
+		Email:    "",
+		Password: "",
+	})
+	if err != nil {
+		response := web_helpers.NewUnauthorizedResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	log.Info("Logout request")
+	accessToken, err := GetAccessCookie(r.Context(), r)
+	if err != nil {
+		response := web_helpers.NewUnauthorizedResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	refreshToken, err := GetRefreshCookie(r.Context(), r)
+	if err != nil {
+		response := web_helpers.NewUnauthorizedResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	authResponse, err := obj.authServer.Logout(r.Context(), &authpb.LogoutRequest{
+		AccessToken:  accessToken.Value,
+		RefreshToken: refreshToken.Value,
+	})
+	if err != nil || !authResponse.GetSuccess() {
+		response := web_helpers.NewUnauthorizedResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	ClearAuthCookies(w)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }

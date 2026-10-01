@@ -20,9 +20,9 @@ type JwtUseCase interface {
 	CreatePairByUser(ctx context.Context, userId int) (string, string, error)
 	CreatePairByRefreshToken(ctx context.Context, token string) (string, string, error)
 	DeleteRefreshToken(ctx context.Context, refreshToken string) error
-	CheckAccessToken(tokenStr string) (bool, int)
+	CheckAccessToken(ctx context.Context, tokenStr string) (bool, int)
 	CheckRefreshToken(ctx context.Context, tokenStr string) (bool, int)
-	ExtractClaims(tokenStr string) (jwt.RegisteredClaims, error)
+	ExtractClaims(ctx context.Context, tokenStr string) (jwt.RegisteredClaims, error)
 }
 
 type Jwt struct {
@@ -102,8 +102,8 @@ func (obj *Jwt) CreatePairByUser(ctx context.Context, userId int) (string, strin
 }
 
 func (obj *Jwt) CreatePairByRefreshToken(ctx context.Context, refreshToken string) (string, string, error) {
-	log := logger.GetLogger()
-	claims, err := obj.ExtractClaims(refreshToken)
+	log := logger.GetLoggerWithRequestId(ctx)
+	claims, err := obj.ExtractClaims(ctx, refreshToken)
 	if err != nil {
 		return "", "", err
 	}
@@ -116,8 +116,8 @@ func (obj *Jwt) CreatePairByRefreshToken(ctx context.Context, refreshToken strin
 }
 
 func (obj *Jwt) DeleteRefreshToken(ctx context.Context, refreshToken string) error {
-	log := logger.GetLogger()
-	claims, err := obj.ExtractClaims(refreshToken)
+	log := logger.GetLoggerWithRequestId(ctx)
+	claims, err := obj.ExtractClaims(ctx, refreshToken)
 	if err != nil {
 		return err
 	}
@@ -129,9 +129,9 @@ func (obj *Jwt) DeleteRefreshToken(ctx context.Context, refreshToken string) err
 	return obj.repository.DeleteByUser(ctx, userId)
 }
 
-func (obj *Jwt) CheckAccessToken(tokenStr string) (bool, int) {
-	log := logger.GetLogger()
-	claims, err := obj.ExtractClaims(tokenStr)
+func (obj *Jwt) CheckAccessToken(ctx context.Context, tokenStr string) (bool, int) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	claims, err := obj.ExtractClaims(ctx, tokenStr)
 	if err != nil {
 		return false, -1
 	}
@@ -148,8 +148,8 @@ func (obj *Jwt) CheckAccessToken(tokenStr string) (bool, int) {
 }
 
 func (obj *Jwt) CheckRefreshToken(ctx context.Context, tokenStr string) (bool, int) {
-	log := logger.GetLogger()
-	claims, err := obj.ExtractClaims(tokenStr)
+	log := logger.GetLoggerWithRequestId(ctx)
+	claims, err := obj.ExtractClaims(ctx, tokenStr)
 	if err != nil {
 		return false, -1
 	}
@@ -179,8 +179,8 @@ func (obj *Jwt) CheckRefreshToken(ctx context.Context, tokenStr string) (bool, i
 	return true, userId
 }
 
-func (obj *Jwt) ExtractClaims(tokenStr string) (jwt.RegisteredClaims, error) {
-	log := logger.GetLogger()
+func (obj *Jwt) ExtractClaims(ctx context.Context, tokenStr string) (jwt.RegisteredClaims, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
 	var claims jwt.RegisteredClaims
 	token, err := jwt.ParseWithClaims(tokenStr, &claims, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
