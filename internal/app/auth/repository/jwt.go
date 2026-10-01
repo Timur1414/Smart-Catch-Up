@@ -18,6 +18,11 @@ type RefreshTokenRepository interface {
 	DeleteByUser(ctx context.Context, userId int) error
 }
 
+const (
+	AccessTokenExpirationTime  = time.Minute * 5
+	RefreshTokenExpirationTime = time.Hour * 24 * 7
+)
+
 type RefreshTokenRedis struct {
 	db *redis.Client
 }
@@ -30,7 +35,7 @@ func (obj *RefreshTokenRedis) Create(ctx context.Context, token domain.RefreshTo
 	log := logger.GetLoggerWithRequestId(ctx)
 	startTime := time.Now()
 	key := strconv.Itoa(token.UserId)
-	err := obj.db.Set(ctx, key, token.Uuid, time.Hour).Err()
+	err := obj.db.Set(ctx, key, token.Uuid, RefreshTokenExpirationTime).Err()
 	duration := time.Since(startTime)
 	if err != nil {
 		log.Warn("Failed to create jwt", zap.Error(err))

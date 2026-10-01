@@ -19,7 +19,6 @@ import (
 type JwtUseCase interface {
 	CreatePairByUser(ctx context.Context, userId int) (string, string, error)
 	CreatePairByRefreshToken(ctx context.Context, token string) (string, string, error)
-	CreateAccessToken(ctx context.Context, user domain.User) (string, error)
 	DeleteRefreshToken(ctx context.Context, refreshToken string) error
 	CheckAccessToken(tokenStr string) (bool, int)
 	CheckRefreshToken(ctx context.Context, tokenStr string) (bool, int)
@@ -57,7 +56,7 @@ func (obj *Jwt) CreatePairByUser(ctx context.Context, userId int) (string, strin
 	}
 
 	claims := jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(repository.AccessTokenExpirationTime)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		Issuer:    obj.GetVersion(),
 		Subject:   userIdStr,
@@ -71,11 +70,11 @@ func (obj *Jwt) CreatePairByUser(ctx context.Context, userId int) (string, strin
 		return "", "", err
 	}
 
-	refreshExpirationTime := time.Now().Add(time.Hour * 2)
+	refreshExpirationTime := time.Now().Add(repository.RefreshTokenExpirationTime)
 	refreshId := uuid.New().String()
 	refreshClaims := jwt.RegisteredClaims{
 		ID:        refreshId,
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 2)),
+		ExpiresAt: jwt.NewNumericDate(refreshExpirationTime),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 		Issuer:    obj.GetVersion(),
 		Subject:   userIdStr,
@@ -114,27 +113,6 @@ func (obj *Jwt) CreatePairByRefreshToken(ctx context.Context, refreshToken strin
 		return "", "", err
 	}
 	return obj.CreatePairByUser(ctx, userId)
-}
-
-func (obj *Jwt) CreateAccessToken(ctx context.Context, user domain.User) (string, error) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	userIdStr := strconv.Itoa(user.Id)
-
-	claims := jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
-		Issuer:    obj.GetVersion(),
-		Subject:   userIdStr,
-	}
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessTokenStr, err := accessToken.SignedString(obj.GetSecret())
-	if err != nil {
-		log.Error("failed to sign access token",
-			zap.Int("user_id", user.Id),
-			zap.Error(err))
-		return "", err
-	}
-	return accessTokenStr, nil
 }
 
 func (obj *Jwt) DeleteRefreshToken(ctx context.Context, refreshToken string) error {

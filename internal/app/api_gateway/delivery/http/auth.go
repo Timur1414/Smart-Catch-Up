@@ -11,6 +11,13 @@ import (
 	"go.uber.org/zap"
 )
 
+const (
+	AccessTokenName            = "access_token"
+	RefreshTokenName           = "refresh_token"
+	AccessTokenExpirationTime  = time.Minute * 5
+	RefreshTokenExpirationTime = time.Hour * 24 * 7
+)
+
 type AuthHandler struct {
 	authServer authpb.AuthClient
 }
@@ -49,7 +56,7 @@ func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 func GetAccessCookie(ctx context.Context, r *http.Request) (*http.Cookie, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	cookie, err := r.Cookie(TokenName)
+	cookie, err := r.Cookie(AccessTokenName)
 	if err != nil {
 		log.Warn("failed to get token cookie", zap.Error(err))
 	}
@@ -67,7 +74,7 @@ func GetRefreshCookie(ctx context.Context, r *http.Request) (*http.Cookie, error
 
 func WriteAuthCookies(w http.ResponseWriter, accessToken string, refreshToken string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     TokenName,
+		Name:     AccessTokenName,
 		Value:    accessToken,
 		Path:     "/",
 		Expires:  time.Now().Add(AccessTokenExpirationTime),
@@ -88,7 +95,7 @@ func WriteAuthCookies(w http.ResponseWriter, accessToken string, refreshToken st
 
 func ClearAuthCookies(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     TokenName,
+		Name:     AccessTokenName,
 		Value:    "",
 		Path:     "/",
 		Expires:  time.Now().AddDate(0, -1, 0),
