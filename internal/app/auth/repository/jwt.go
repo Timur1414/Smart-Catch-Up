@@ -34,7 +34,7 @@ func NewRefreshTokenRedis(client *redis.Client) *RefreshTokenRedis {
 func (obj *RefreshTokenRedis) Create(ctx context.Context, token domain.RefreshToken) (string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
 	startTime := time.Now()
-	key := strconv.Itoa(token.UserId)
+	key := "auth:" + strconv.Itoa(token.UserId)
 	err := obj.db.Set(ctx, key, token.Uuid, RefreshTokenExpirationTime).Err()
 	duration := time.Since(startTime)
 	if err != nil {
@@ -49,7 +49,7 @@ func (obj *RefreshTokenRedis) GetByUser(ctx context.Context, userId int) (domain
 	log := logger.GetLoggerWithRequestId(ctx)
 	var uuidCmd *redis.StringCmd
 	var ttlCmd *redis.DurationCmd
-	key := strconv.Itoa(userId)
+	key := "auth:" + strconv.Itoa(userId)
 	startTime := time.Now()
 	_, err := obj.db.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 		uuidCmd = pipe.Get(ctx, key)
@@ -85,7 +85,7 @@ func (obj *RefreshTokenRedis) GetByUser(ctx context.Context, userId int) (domain
 func (obj *RefreshTokenRedis) DeleteByUser(ctx context.Context, userId int) error {
 	log := logger.GetLoggerWithRequestId(ctx)
 	startTime := time.Now()
-	key := strconv.Itoa(userId)
+	key := "auth:" + strconv.Itoa(userId)
 	err := obj.db.Del(ctx, key).Err()
 	duration := time.Since(startTime)
 	if err != nil {

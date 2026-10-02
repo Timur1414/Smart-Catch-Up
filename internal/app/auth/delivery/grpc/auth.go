@@ -76,7 +76,7 @@ func (obj *AuthServer) Refresh(ctx context.Context, request *authpb.RefreshReque
 		return nil, err
 	}
 	return &authpb.RefreshResponse{
-		UserId:       1,
+		UserId:       int64(userId),
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
