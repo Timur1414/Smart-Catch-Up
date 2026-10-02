@@ -15,6 +15,7 @@ type UserUseCase interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	Update(ctx context.Context, user domain.User) error
+	IsExists(ctx context.Context, user domain.User) (domain.User, error)
 }
 
 type User struct {
@@ -26,7 +27,7 @@ func NewUser(repo repository.UserRepository) *User {
 }
 
 func (obj *User) Create(ctx context.Context, user domain.User) (int, error) {
-	log := logger.GetLogger()
+	log := logger.GetLoggerWithRequestId(ctx)
 	userToCreate := domain.User{
 		Email: user.Email,
 	}
@@ -50,4 +51,18 @@ func (obj *User) GetByEmail(ctx context.Context, email string) (domain.User, err
 
 func (obj *User) Update(ctx context.Context, user domain.User) error {
 	return obj.repository.Update(ctx, user)
+}
+
+func (obj *User) IsExists(ctx context.Context, user domain.User) (domain.User, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	userFromDb, err := obj.GetByEmail(ctx, user.Email)
+	if err != nil {
+		return domain.User{}, err
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(userFromDb.Password), []byte(user.Password))
+	if err != nil {
+		log.Warn("failed to compare password", zap.Error(err))
+		return domain.User{}, err
+	}
+	return userFromDb, nil
 }

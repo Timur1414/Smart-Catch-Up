@@ -48,7 +48,8 @@ func (obj *AuthServer) Login(ctx context.Context, request *authpb.LoginRequest) 
 	if request.GetEmail() == "" || request.GetPassword() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
-	user, err := obj.userUsecase.GetByEmail(ctx, request.GetEmail())
+	userRequest := domain.User{Email: request.GetEmail(), Password: request.GetPassword()}
+	user, err := obj.userUsecase.IsExists(ctx, userRequest)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
 	}
