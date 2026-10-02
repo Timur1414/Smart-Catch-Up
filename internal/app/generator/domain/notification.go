@@ -10,6 +10,7 @@ type NotificationAction struct {
 type Notification struct {
 	Id               int
 	NotificationType string
+	RecipientId      int
 	ActorId          int
 	ActorName        string
 	ObjectId         int
