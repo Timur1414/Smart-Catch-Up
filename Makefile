@@ -9,7 +9,7 @@ deps:
 .PHONY: proto
 proto:
 	protoc --go_out=. --go_opt=module=github.com/Timur1414/Smart-Catch-Up --go-grpc_out=. --go-grpc_opt=module=github.com/Timur1414/Smart-Catch-Up api/proto/auth/auth.proto
-	protoc --go_out=. --go_opt=module=github.com/Timur1414/Smart-Catch-Up --go-grpc_out=. --go-grpc_opt=module=github.com/Timur1414/Smart-Catch-Up api/proto/aggregator/aggregator.proto
+	protoc --go_out=. --go_opt=module=github.com/Timur1414/Smart-Catch-Up --go-grpc_out=. --go-grpc_opt=module=github.com/Timur1414/Smart-Catch-Up api/proto/generator/generator.proto
 
 .PHONY: mocks
 mocks:
