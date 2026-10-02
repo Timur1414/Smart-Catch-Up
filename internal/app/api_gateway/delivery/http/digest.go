@@ -19,7 +19,7 @@ func NewDigestHandler(usecase usecase.DigestUseCase) *DigestHandler {
 	return &DigestHandler{usecase: usecase}
 }
 
-func (obj DigestHandler) Get(w http.ResponseWriter, r *http.Request) {
+func (obj *DigestHandler) Get(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Get digest request")
 	requestId := context_helper.GetRequestIdFromContext(r.Context())

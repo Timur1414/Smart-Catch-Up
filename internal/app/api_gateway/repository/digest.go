@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
-	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type DigestRepository interface {
@@ -15,29 +15,29 @@ type DigestRepository interface {
 }
 
 type DigestPostgres struct {
-	db database.DB
+	db *pgxpool.Pool
 }
 
-func NewDigestPostgres(db database.DB) *DigestPostgres {
+func NewDigestPostgres(db *pgxpool.Pool) *DigestPostgres {
 	return &DigestPostgres{db: db}
 }
 
-func (obj DigestPostgres) Create(ctx context.Context, digest domain.Digest) (int, error) {
+func (obj *DigestPostgres) Create(ctx context.Context, digest domain.Digest) (int, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj DigestPostgres) GetById(ctx context.Context, id int) (domain.Digest, error) {
+func (obj *DigestPostgres) GetById(ctx context.Context, id int) (domain.Digest, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj DigestPostgres) GetByUser(ctx context.Context, user domain.User) (domain.Digest, error) {
+func (obj *DigestPostgres) GetByUser(ctx context.Context, user domain.User) (domain.Digest, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj DigestPostgres) Update(ctx context.Context, digest domain.Digest) error {
+func (obj *DigestPostgres) Update(ctx context.Context, digest domain.Digest) error {
 	//TODO implement me
 	panic("implement me")
 }

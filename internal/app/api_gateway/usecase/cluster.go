@@ -21,17 +21,17 @@ func NewCluster(repo repository.ClusterRepository) *Cluster {
 	return &Cluster{repository: repo}
 }
 
-func (obj Cluster) GetById(ctx context.Context, id int) (domain.Cluster, error) {
+func (obj *Cluster) GetById(ctx context.Context, id int) (domain.Cluster, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj Cluster) GetByType(ctx context.Context, clusterType string) (domain.Cluster, error) {
+func (obj *Cluster) GetByType(ctx context.Context, clusterType string) (domain.Cluster, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj Cluster) GetAll(ctx context.Context) ([]domain.Cluster, error) {
+func (obj *Cluster) GetAll(ctx context.Context) ([]domain.Cluster, error) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -22,22 +22,22 @@ func NewNotification(repo repository.NotificationRepository) *Notification {
 	return &Notification{repository: repo}
 }
 
-func (obj Notification) Create(ctx context.Context, notification domain.Notification) (int, error) {
+func (obj *Notification) Create(ctx context.Context, notification domain.Notification) (int, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj Notification) GetById(ctx context.Context, id int) (domain.Notification, error) {
+func (obj *Notification) GetById(ctx context.Context, id int) (domain.Notification, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj Notification) GetByUser(ctx context.Context, user domain.User) (domain.Notification, error) {
+func (obj *Notification) GetByUser(ctx context.Context, user domain.User) (domain.Notification, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (obj Notification) Update(ctx context.Context, notification domain.Notification) error {
+func (obj *Notification) Update(ctx context.Context, notification domain.Notification) error {
 	//TODO implement me
 	panic("implement me")
 }
