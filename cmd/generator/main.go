@@ -8,6 +8,9 @@ import (
 	"time"
 
 	generatorpb "github.com/Timur1414/Smart-Catch-Up/api/proto/generator"
+	generatorDelivery "github.com/Timur1414/Smart-Catch-Up/internal/app/generator/delivery/grpc"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/generator/repository"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/generator/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
@@ -55,6 +58,13 @@ func main() {
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
+	notificationRepo := repository.NewNotificationPostgres(dbPool)
+	log.Info("Repository initialized")
+	notificationUsecase := usecase.NewNotification(notificationRepo)
+	log.Info("UseCase initialized")
+	generatorServer := generatorDelivery.NewGeneratorServer(notificationUsecase)
+	log.Info("Generator gRPC server initialized")
+
 	grpcPort := os.Getenv("AUTH_GRPC_PORT")
 	if grpcPort == "" {
 		grpcPort = "50052"
@@ -66,7 +76,7 @@ func main() {
 	}
 	server := grpc.NewServer()
 
-	generatorpb.RegisterGeneratorServer(server)
+	generatorpb.RegisterGeneratorServer(server, generatorServer)
 	log.Info("Generator gRPC server started", zap.String("port", grpcPort))
 	if err = server.Serve(lis); err != nil {
 		log.Fatal("Failed to serve gRPC", zap.Error(err))
