@@ -9,5 +9,5 @@ type User struct {
 	UpdatedAt time.Time
 	Email     string
 	Password  string
-	VkId      int
+	Active    bool
 }
