@@ -1,0 +1,19 @@
+create table if not exists settings (
+    id int primary key generated always as identity,
+    user_id int not null unique references "user"(id) on delete cascade,
+    "interval" interval not null default interval '1 hour',
+    avatar_url text not null default 'avatar/default.png',
+    first_name text,
+    last_name text,
+    updated_at timestamp default null
+);
+
+create trigger update_timestamp
+    before update on settings
+    for each row execute function new_updated_at();
+
+---- create above / drop below ----
+
+drop table if exists settings cascade;
+
+drop trigger if exists update_timestamp on settings;

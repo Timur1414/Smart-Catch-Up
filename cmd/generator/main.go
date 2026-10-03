@@ -42,7 +42,7 @@ func main() {
 	log := logger.GetLogger()
 
 	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("POSTGRES_PASSWORD"),
 		os.Getenv("POSTGRES_HOST"),
