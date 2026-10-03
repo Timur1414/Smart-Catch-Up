@@ -10,7 +10,7 @@ import (
 
 type NotificationUseCase interface {
 	Create(ctx context.Context, notificationType string, text string, userId int) (int, error)
-	BulkCreate(ctx context.Context, notificationTypes []string, number int, userIds []int) ([]int, error)
+	BulkCreate(ctx context.Context, notificationTypes []string, number int, userIds []int) error
 }
 
 type Notification struct {
@@ -37,7 +37,7 @@ func (obj *Notification) Create(ctx context.Context, notificationType string, te
 	return obj.repository.Create(ctx, notification)
 }
 
-func (obj *Notification) BulkCreate(ctx context.Context, notificationTypes []string, number int, userIds []int) ([]int, error) {
+func (obj *Notification) BulkCreate(ctx context.Context, notificationTypes []string, number int, userIds []int) error {
 	notifications := make([]domain.Notification, number)
 	for i := range number {
 		notifications[i] = domain.Notification{
