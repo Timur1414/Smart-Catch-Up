@@ -38,7 +38,7 @@ func (obj *GeneratorServer) GenerateN(ctx context.Context, request *generatorpb.
 	for i := 0; i < len(request.GetUserIds()); i++ {
 		userIds[i] = int(request.GetUserIds()[i])
 	}
-	_, err := obj.usecase.BulkCreate(ctx, request.GetNotificationTypes(), int(request.GetNumber()), userIds)
+	err := obj.usecase.BulkCreate(ctx, request.GetNotificationTypes(), int(request.GetNumber()), userIds)
 	if err != nil {
 		return nil, err
 	}
