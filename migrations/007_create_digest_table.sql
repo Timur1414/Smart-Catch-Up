@@ -12,7 +12,11 @@ create trigger update_timestamp
     before update on digest
     for each row execute function new_updated_at();
 
+create index if not exists idx_digest_user_id on digest(user_id);
+
 ---- create above / drop below ----
+
+drop index if exists idx_digest_user_id;
 
 drop table if exists digest cascade;
 

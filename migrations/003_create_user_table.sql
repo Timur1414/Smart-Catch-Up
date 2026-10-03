@@ -16,7 +16,11 @@ create trigger update_timestamp
     before update on "user"
     for each row execute function new_updated_at();
 
+create index if not exists idx_user_email on "user"(email);
+
 ---- create above / drop below ----
+
+drop index if exists idx_user_email;
 
 drop table if exists "user" cascade;
 

@@ -14,6 +14,10 @@ create table if not exists notification (
     constraint read_at_not_in_past check ( read_at >= created_at )
 );
 
+create index if not exists idx_notification_cluster on notification(cluster);
+
 ---- create above / drop below ----
+
+drop index if exists idx_notification_cluster;
 
 drop table if exists notification cascade;

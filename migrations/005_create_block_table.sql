@@ -8,6 +8,10 @@ create table if not exists block (
     constraint end_not_before_start check ( end_at >= start_at )
 );
 
+create index if not exists idx_block_user_id on block(user_id);
+
 ---- create above / drop below ----
+
+drop index if exists idx_block_user_id;
 
 drop table if exists block cascade;
