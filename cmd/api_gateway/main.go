@@ -9,6 +9,7 @@ import (
 	"time"
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
+	generatorpb "github.com/Timur1414/Smart-Catch-Up/api/proto/generator"
 	delivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
@@ -85,6 +86,19 @@ func main() {
 	}
 	authClient := authpb.NewAuthClient(authConn)
 
+	generatorConn, err := grpc.NewClient(
+		"generator:50052",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			d := net.Dialer{Timeout: 10 * time.Second}
+			return d.DialContext(ctx, "tcp4", addr)
+		}),
+	)
+	if err != nil {
+		log.Fatal("Failed to connect to generator service", zap.Error(err))
+	}
+	generatorClient := generatorpb.NewGeneratorClient(generatorConn)
+
 	userRepo := repository.NewUserPostgres(dbPool)
 	settingsRepo := repository.NewSettingsPostgres(dbPool)
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
@@ -103,9 +117,10 @@ func main() {
 	log.Info("UseCase initialized")
 	userHandler := delivery.NewUserHandler(userUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase)
-	adminHandler := delivery.NewAdminHandler(notificationUseCase)
+	adminHandler := delivery.NewAdminHandler(generatorClient)
 	authHandler := delivery.NewAuthHandler(authClient)
 	log.Info("Handler initialized")
+	_ = notificationUseCase
 	_ = settingsUseCase
 	_ = clusterUseCase
 	_ = blockUseCase

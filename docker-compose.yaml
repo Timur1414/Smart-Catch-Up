@@ -127,6 +127,8 @@ services:
         condition: service_completed_successfully
       auth:
         condition: service_started
+      generator:
+        condition: service_started
     read_only: true
     security_opt:
       - no-new-privileges:true
