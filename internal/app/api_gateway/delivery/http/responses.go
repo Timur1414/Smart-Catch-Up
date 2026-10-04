@@ -157,3 +157,47 @@ func NewDigestResponse(requestId string, digest domain.Digest, importantBlocks [
 		Categories:   categoriesResponses,
 	}
 }
+
+type NotificationActionResponse struct {
+	ActionType   string `json:"action_type"`
+	ActionTarget string `json:"action_target"`
+}
+
+type NotificationResponse struct {
+	Id      int                          `json:"id"`
+	Img     string                       `json:"img"`
+	Actor   string                       `json:"actor"`
+	Date    time.Time                    `json:"date"`
+	Payload string                       `json:"payload"`
+	Actions []NotificationActionResponse `json:"actions"`
+}
+
+type NotificationsResponse struct {
+	web_helpers.UuidResponse
+	Notifications []NotificationResponse `json:"notifications"`
+}
+
+func NewNotificationsResponse(requestId string, notifications []domain.Notification) NotificationsResponse {
+	notificationResponses := make([]NotificationResponse, len(notifications))
+	for i, notification := range notifications {
+		actions := make([]NotificationActionResponse, len(notification.Actions))
+		for j, action := range notification.Actions {
+			actions[j] = NotificationActionResponse{
+				ActionType:   action.ActionType,
+				ActionTarget: action.ActionTarget,
+			}
+		}
+		notificationResponses[i] = NotificationResponse{
+			Id:      notification.Id,
+			Img:     "/avatar/123.png",
+			Actor:   notification.ActorName,
+			Date:    notification.CreatedAt,
+			Payload: notification.Payload,
+			Actions: actions,
+		}
+	}
+	return NotificationsResponse{
+		UuidResponse:  web_helpers.NewUuidResponse(http.StatusOK, "Ok", requestId),
+		Notifications: notificationResponses,
+	}
+}

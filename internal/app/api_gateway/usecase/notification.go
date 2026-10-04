@@ -8,10 +8,9 @@ import (
 )
 
 type NotificationUseCase interface {
-	Create(ctx context.Context, notification domain.Notification) (int, error)
 	GetById(ctx context.Context, id int) (domain.Notification, error)
-	GetByUser(ctx context.Context, user domain.User) (domain.Notification, error)
-	Update(ctx context.Context, notification domain.Notification) error
+	GetByUser(ctx context.Context, userId int) ([]domain.Notification, error)
+	GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error)
 }
 
 type Notification struct {
@@ -22,22 +21,14 @@ func NewNotification(repo repository.NotificationRepository) *Notification {
 	return &Notification{repository: repo}
 }
 
-func (obj *Notification) Create(ctx context.Context, notification domain.Notification) (int, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (obj *Notification) GetById(ctx context.Context, id int) (domain.Notification, error) {
-	//TODO implement me
-	panic("implement me")
+	return obj.repository.GetById(ctx, id)
 }
 
-func (obj *Notification) GetByUser(ctx context.Context, user domain.User) (domain.Notification, error) {
-	//TODO implement me
-	panic("implement me")
+func (obj *Notification) GetByUser(ctx context.Context, userId int) ([]domain.Notification, error) {
+	return obj.repository.GetByUser(ctx, userId, 10)
 }
 
-func (obj *Notification) Update(ctx context.Context, notification domain.Notification) error {
-	//TODO implement me
-	panic("implement me")
+func (obj *Notification) GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error) {
+	return obj.repository.GetAllByUser(ctx, userId)
 }
