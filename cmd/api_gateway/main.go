@@ -119,8 +119,8 @@ func main() {
 	digestHandler := delivery.NewDigestHandler(digestUseCase)
 	adminHandler := delivery.NewAdminHandler(generatorClient)
 	authHandler := delivery.NewAuthHandler(authClient)
+	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
 	log.Info("Handler initialized")
-	_ = notificationUseCase
 	_ = settingsUseCase
 	_ = clusterUseCase
 	_ = blockUseCase
@@ -143,6 +143,8 @@ func main() {
 	mux.HandleFunc("POST /profile/avatar", userHandler.UpdateProfileAvatar)
 	mux.HandleFunc("GET /is_staff", userHandler.IsStaff)
 	mux.HandleFunc("GET /digest", digestHandler.Get)
+	mux.HandleFunc("GET /notifications", notificationsHandler.Get)
+	mux.HandleFunc("GET /notifications/all", notificationsHandler.GetAll)
 	mux.HandleFunc("POST /admin/generate", adminHandler.Generate1)
 	mux.HandleFunc("POST /admin/generate_n", adminHandler.GenerateN)
 

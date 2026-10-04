@@ -16,3 +16,11 @@ func GetRequestIdFromContext(ctx context.Context) string {
 	}
 	return requestId
 }
+
+func GetUserIdFromContext(ctx context.Context) int {
+	userId, ok := ctx.Value(ContextKeyUser).(int)
+	if !ok {
+		return -1
+	}
+	return userId
+}
