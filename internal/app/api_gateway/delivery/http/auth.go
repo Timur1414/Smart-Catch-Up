@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -29,11 +30,24 @@ func NewAuthHandler(authServer authpb.AuthClient) *AuthHandler {
 
 func (obj *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
-	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	log.Info("Login request")
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
+	var request LoginRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	defer func() {
+		err = r.Body.Close()
+		if err != nil {
+			log.Error("failed to close request body", zap.Error(err))
+		}
+	}()
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
 	authResponse, err := obj.authServer.Login(r.Context(), &authpb.LoginRequest{
-		Email:    "",
-		Password: "",
+		Email:    request.Email,
+		Password: request.Password,
 	})
 	if err != nil {
 		response := web_helpers.NewUnauthorizedResponse(requestId)
@@ -70,11 +84,24 @@ func (obj *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 
 func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
-	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	log.Info("Register request")
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
+	var request RegisterRequest
+	err := json.NewDecoder(r.Body).Decode(&request)
+	defer func() {
+		err = r.Body.Close()
+		if err != nil {
+			log.Error("failed to close request body", zap.Error(err))
+		}
+	}()
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
 	authResponse, err := obj.authServer.Register(r.Context(), &authpb.RegisterRequest{
-		Email:    "",
-		Password: "",
+		Email:    request.Email,
+		Password: request.Password,
 	})
 	if err != nil {
 		response := web_helpers.NewUnauthorizedResponse(requestId)
