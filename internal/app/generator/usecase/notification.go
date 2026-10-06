@@ -25,7 +25,7 @@ func (obj *Notification) Create(ctx context.Context, notificationType string, te
 	notification := domain.Notification{
 		NotificationType: notificationType,
 		RecipientId:      userId,
-		ActorId:          0,
+		ActorId:          1,
 		ActorName:        "system",
 		ObjectId:         0,
 		ObjectType:       "",
@@ -43,7 +43,7 @@ func (obj *Notification) BulkCreate(ctx context.Context, notificationTypes []str
 		notifications[i] = domain.Notification{
 			NotificationType: notificationTypes[i%len(notificationTypes)],
 			RecipientId:      userIds[i%len(userIds)],
-			ActorId:          0,
+			ActorId:          1,
 			ActorName:        "system",
 			ObjectId:         0,
 			ObjectType:       "",

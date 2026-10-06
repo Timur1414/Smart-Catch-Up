@@ -6,6 +6,7 @@ import (
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
@@ -29,21 +30,29 @@ func (obj *NotificationPostgres) GetById(ctx context.Context, id int) (domain.No
 	query := `select cluster, notification_type, recipient_id, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where id = $1;`
 	args := []any{id}
 	res := domain.Notification{Id: id}
+	var cluster pgtype.Text
+	var readAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Cluster, &res.NotificationType, &res.RecipientId, &res.ActorId, &res.ActorName, &res.ObjectId, &res.ObjectType, &res.CreatedAt, &res.ReadAt, &res.Payload)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&cluster, &res.NotificationType, &res.RecipientId, &res.ActorId, &res.ActorName, &res.ObjectId, &res.ObjectType, &res.CreatedAt, &readAt, &res.Payload)
 	if err != nil {
 		log.Error("failed to get notification", zap.Error(err))
 		return domain.Notification{}, err
 	}
 	duration := time.Since(start)
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	if cluster.Valid {
+		res.Cluster = cluster.String
+	}
+	if readAt.Valid {
+		res.ReadAt = readAt.Time
+	}
 	log.Info("Query executed")
 	return res, nil
 }
 
 func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limit int) ([]domain.Notification, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, cluster, notification_type, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where recipient_id = $1 order by notification.created_at limit $2;`
+	query := `select id, cluster, notification_type, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where recipient_id = $1 order by notification.created_at desc limit $2;`
 	args := []any{userId, limit}
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
@@ -57,10 +66,18 @@ func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limi
 	res := make([]domain.Notification, 0)
 	for rows.Next() {
 		notification := domain.Notification{RecipientId: userId}
-		err = rows.Scan(&notification.Id, &notification.Cluster, &notification.NotificationType, &notification.ActorId, &notification.ActorName, &notification.ObjectId, &notification.ObjectType, &notification.CreatedAt, &notification.ReadAt, &notification.Payload)
+		var cluster pgtype.Text
+		var readAt pgtype.Timestamp
+		err = rows.Scan(&notification.Id, &cluster, &notification.NotificationType, &notification.ActorId, &notification.ActorName, &notification.ObjectId, &notification.ObjectType, &notification.CreatedAt, &readAt, &notification.Payload)
 		if err != nil {
 			log.Error("failed to scan notification", zap.Error(err))
 			return []domain.Notification{}, err
+		}
+		if cluster.Valid {
+			notification.Cluster = cluster.String
+		}
+		if readAt.Valid {
+			notification.ReadAt = readAt.Time
 		}
 		res = append(res, notification)
 	}
@@ -70,7 +87,7 @@ func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limi
 
 func (obj *NotificationPostgres) GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, cluster, notification_type, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where recipient_id = $1 order by notification.created_at;`
+	query := `select id, cluster, notification_type, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where recipient_id = $1 order by notification.created_at desc;`
 	args := []any{userId}
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
@@ -84,10 +101,18 @@ func (obj *NotificationPostgres) GetAllByUser(ctx context.Context, userId int) (
 	res := make([]domain.Notification, 0)
 	for rows.Next() {
 		notification := domain.Notification{RecipientId: userId}
-		err = rows.Scan(&notification.Id, &notification.Cluster, &notification.NotificationType, &notification.ActorId, &notification.ActorName, &notification.ObjectId, &notification.ObjectType, &notification.CreatedAt, &notification.ReadAt, &notification.Payload)
+		var cluster pgtype.Text
+		var readAt pgtype.Timestamp
+		err = rows.Scan(&notification.Id, &cluster, &notification.NotificationType, &notification.ActorId, &notification.ActorName, &notification.ObjectId, &notification.ObjectType, &notification.CreatedAt, &readAt, &notification.Payload)
 		if err != nil {
 			log.Error("failed to scan notification", zap.Error(err))
 			return []domain.Notification{}, err
+		}
+		if cluster.Valid {
+			notification.Cluster = cluster.String
+		}
+		if readAt.Valid {
+			notification.ReadAt = readAt.Time
 		}
 		res = append(res, notification)
 	}
