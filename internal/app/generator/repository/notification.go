@@ -29,7 +29,7 @@ func NewNotificationPostgres(db *pgxpool.Pool) *NotificationPostgres {
 
 func (obj *NotificationPostgres) Create(ctx context.Context, notification domain.Notification) (int, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `insert into notification(notification_type, recipient_id, actor_id, actor_name, payload) values ($1, $2, $3, $4, $5);`
+	query := `insert into notification(notification_type, recipient_id, actor_id, actor_name, payload) values ($1, $2, $3, $4, $5) returning id;`
 	args := []any{notification.NotificationType, notification.RecipientId, notification.ActorId, notification.ActorName, notification.Payload}
 	var id int
 	start := time.Now()

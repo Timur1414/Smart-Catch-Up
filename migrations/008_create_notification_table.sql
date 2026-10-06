@@ -4,12 +4,12 @@ create table if not exists notification (
     notification_type notification_type_enum not null,
     recipient_id int not null references "user"(id) on delete cascade,
     actor_id int not null references "user"(id) on delete cascade,
-    actor_name text,
-    object_id int default 0,
-    object_type text default '',
+    actor_name text not null,
+    object_id int not null default 0,
+    object_type text not null default '',
     created_at timestamp not null default now(),
     read_at timestamp default null,
-    payload text,
+    payload text not null,
 
     constraint read_at_not_in_past check ( read_at >= created_at )
 );
