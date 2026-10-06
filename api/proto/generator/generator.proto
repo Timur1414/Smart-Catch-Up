@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package generator;
+
+option go_package = "github.com/Timur1414/Smart-Catch-Up/api/proto/generator;generatorpb";
+
+service Generator {
+  rpc Generate1(Generate1Request) returns (Generate1Response);
+  rpc GenerateN(GenerateNRequest) returns (GenerateNResponse);
+}
+
+message Generate1Request {
+  string notification_type = 1;
+  string text = 2;
+  int64 user_id = 3;
+}
+
+message Generate1Response {
+  bool status = 1;
+}
+
+message GenerateNRequest {
+  repeated string notification_types = 1;
+  int64 number = 2;
+  repeated int64 user_ids = 3;
+}
+
+message GenerateNResponse {
+  bool status = 1;
+}

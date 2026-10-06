@@ -5,3 +5,71 @@ deps:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.0
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 	#go install github.com/mailru/easyjson/...@v0.9.2
+
+.PHONY: proto
+proto:
+	protoc --go_out=. --go_opt=module=github.com/Timur1414/Smart-Catch-Up --go-grpc_out=. --go-grpc_opt=module=github.com/Timur1414/Smart-Catch-Up api/proto/auth/auth.proto
+	protoc --go_out=. --go_opt=module=github.com/Timur1414/Smart-Catch-Up --go-grpc_out=. --go-grpc_opt=module=github.com/Timur1414/Smart-Catch-Up api/proto/generator/generator.proto
+
+.PHONY: mocks
+mocks:
+	@echo "Генерация моков для application..."
+	mockgen -source=internal/application/account.go -destination=internal/application/mocks/mock_account.go -package=mocks
+	mockgen -source=internal/application/user.go -destination=internal/application/mocks/mock_user.go -package=mocks
+	mockgen -source=internal/application/budget.go -destination=internal/application/mocks/mock_budget.go -package=mocks
+	mockgen -source=internal/application/transaction.go -destination=internal/application/mocks/mock_transaction.go -package=mocks
+	mockgen -source=internal/application/enums.go -destination=internal/application/mocks/mock_enums.go -package=mocks
+	mockgen -source=internal/application/voice_transaction.go -destination=internal/application/mocks/mock_voice_transaction.go -package=mocks
+	mockgen -source=internal/application/avatar_uploader.go -destination=internal/application/mocks/mock_avatar_uploader.go -package=mocks
+	mockgen -source=internal/fileserver/application/avatar.go -destination=internal/fileserver/application/mocks/mock_avatar.go -package=mocks
+	mockgen -source=internal/fileserver/grpcserver/server.go -destination=internal/fileserver/grpcserver/mocks/mock_server.go -package=mocks
+
+	@echo "Генерация моков для repository..."
+	mockgen -source=internal/repository/account.go -destination=internal/repository/mocks/mock_account_repo.go -package=mocks
+	mockgen -source=internal/repository/user.go -destination=internal/repository/mocks/mock_user_repo.go -package=mocks
+	mockgen -source=internal/repository/budget.go -destination=internal/repository/mocks/mock_budget_repo.go -package=mocks
+	mockgen -source=internal/repository/transaction.go -destination=internal/repository/mocks/mock_transaction_repo.go -package=mocks
+	mockgen -source=internal/repository/enums.go -destination=internal/repository/mocks/mock_enums_repo.go -package=mocks
+	mockgen -source=internal/repository/jwt.go -destination=internal/repository/mocks/mock_jwt_repo.go -package=mocks
+
+	@echo "Генерация моков для auth..."
+	mockgen -source=internal/auth/auth.go -destination=internal/auth/mocks/mock_auth.go -package=mocks
+	mockgen -source=internal/auth/jwt_auth/jwt.go -destination=internal/auth/jwt_auth/mocks/mock_jwt.go -package=mocks
+
+	@echo "Генерация моков для secure..."
+	mockgen -source=internal/secure/csrf.go -destination=internal/secure/mocks/mock_csrf.go -package=mocks
+
+	@echo "Готово!"
+
+.PHONY: test
+test:
+	go test $$(go list ./... | $(EXCLUDE_DIRS)) -v
+
+.PHONY: test-cover
+test-cover:
+	@echo "Запуск тестов с покрытием..."
+	@rm -f coverage.tmp coverage.out
+	@echo "mode: atomic" > coverage.out
+	@for pkg in $$(go list ./... | $(EXCLUDE_DIRS)); do \
+		echo "Testing $$pkg..."; \
+		go test $$pkg -coverprofile=coverage.tmp -covermode=atomic && \
+		grep -v '_easyjson\.go' coverage.tmp | grep -v 'mock_.*\.go' >> coverage.tmp.clean 2>/dev/null || true; \
+		if [ -f coverage.tmp.clean ]; then \
+			tail -n +2 coverage.tmp.clean >> coverage.out; \
+			rm -f coverage.tmp.clean; \
+		else \
+			tail -n +2 coverage.tmp >> coverage.out || true; \
+		fi; \
+	done
+	@rm -f coverage.tmp
+
+.PHONY: test-cover-html
+test-cover-html: test-cover
+	go tool cover -html=coverage.out -o coverage.html
+	@xdg-open coverage.html 2>/dev/null || open coverage.html 2>/dev/null || echo "Откройте coverage.html вручную"
+	@echo "------------------------------------------------------------------------"
+	@go tool cover -func=coverage.out | grep total
+
+.PHONY: clean-test
+clean-test:
+	rm -f coverage.out coverage.html coverage.tmp

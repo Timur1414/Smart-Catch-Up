@@ -80,7 +80,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ServerError'
 
-  /auth/signup:
+  /auth/register:
     post:
       tags:
         - auth
