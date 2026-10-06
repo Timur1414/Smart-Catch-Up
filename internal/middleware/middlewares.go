@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -104,8 +105,21 @@ func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handle
 			web_helpers.WriteResponseJSON(w, response.Code, response)
 			return
 		}
-		ctx := context.WithValue(r.Context(), context_helper.ContextKeyUser, authResponse.GetUserId())
+		ctx := context.WithValue(r.Context(), context_helper.ContextKeyUser, int(authResponse.GetUserId()))
 		log.Info("[auth middleware] auth success]", zap.Int64("user_id", authResponse.GetUserId()), zap.String("path", path))
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func CORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", os.Getenv("FRONT_URL"))
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
+		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Origin, Cache-Control, X-Requested-With")
+		if r.Method == http.MethodOptions {
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }

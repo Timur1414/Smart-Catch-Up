@@ -115,13 +115,12 @@ func main() {
 	blockUseCase := usecase.NewBlock(blockRepo)
 	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
 	log.Info("UseCase initialized")
-	userHandler := delivery.NewUserHandler(userUseCase)
+	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase)
 	adminHandler := delivery.NewAdminHandler(generatorClient)
 	authHandler := delivery.NewAuthHandler(authClient)
 	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
 	log.Info("Handler initialized")
-	_ = settingsUseCase
 	_ = clusterUseCase
 	_ = blockUseCase
 	_ = blockPartUseCase
@@ -145,7 +144,8 @@ func main() {
 	mux.HandleFunc("POST /admin/generate_n", adminHandler.GenerateN)
 
 	handler := middleware.AuthMiddleware(mux, authClient)
-	handler = middleware.AccessLogMiddleware(mux)
+	handler = middleware.CORSMiddleware(handler)
+	handler = middleware.AccessLogMiddleware(handler)
 	handler = middleware.PanicMiddleware(handler)
 
 	addr := ":" + os.Getenv("PORT")

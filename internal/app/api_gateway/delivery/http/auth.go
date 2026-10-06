@@ -115,8 +115,9 @@ func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
-	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	log.Info("Logout request")
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
+	userId := context_helper.GetUserIdFromContext(r.Context())
 	accessToken, err := GetAccessCookie(r.Context(), r)
 	if err != nil {
 		response := web_helpers.NewUnauthorizedResponse(requestId)
@@ -130,6 +131,7 @@ func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	authResponse, err := obj.authServer.Logout(r.Context(), &authpb.LogoutRequest{
+		UserId:       int64(userId),
 		AccessToken:  accessToken.Value,
 		RefreshToken: refreshToken.Value,
 	})
