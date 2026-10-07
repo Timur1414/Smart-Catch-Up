@@ -14,6 +14,7 @@ import (
 type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
+	GetAllIds(ctx context.Context) ([]int, error)
 	Update(ctx context.Context, user domain.User) error
 }
 
@@ -70,6 +71,33 @@ func (obj *UserPostgres) GetByEmail(ctx context.Context, email string) (domain.U
 	if updatedAt.Valid {
 		res.UpdatedAt = updatedAt.Time
 	}
+	log.Info("Query executed")
+	return res, nil
+}
+
+func (obj *UserPostgres) GetAllIds(ctx context.Context) ([]int, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `select id from "user" where active = true;`
+	var args []any
+	res := make([]int, 0)
+	start := time.Now()
+	rows, err := obj.db.Query(ctx, query, args...)
+	if err != nil {
+		log.Error("failed to get all users ids", zap.Error(err))
+		return []int{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		err = rows.Scan(&id)
+		if err != nil {
+			log.Error("failed to get all users ids", zap.Error(err))
+			return []int{}, err
+		}
+		res = append(res, id)
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	log.Info("Query executed")
 	return res, nil
 }

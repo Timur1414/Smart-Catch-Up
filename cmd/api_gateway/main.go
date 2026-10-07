@@ -117,7 +117,7 @@ func main() {
 	log.Info("UseCase initialized")
 	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase)
-	adminHandler := delivery.NewAdminHandler(generatorClient)
+	adminHandler := delivery.NewAdminHandler(generatorClient, userUseCase, notificationUseCase)
 	authHandler := delivery.NewAuthHandler(authClient)
 	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
 	log.Info("Handler initialized")

@@ -1,22 +1,31 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
 	generatorpb "github.com/Timur1414/Smart-Catch-Up/api/proto/generator"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/validators"
 	"go.uber.org/zap"
 )
 
 type AdminHandler struct {
-	generatorServer generatorpb.GeneratorClient
+	generatorServer     generatorpb.GeneratorClient
+	userUsecase         usecase.UserUseCase
+	notificationUsecase usecase.NotificationUseCase
 }
 
-func NewAdminHandler(server generatorpb.GeneratorClient) *AdminHandler {
-	return &AdminHandler{generatorServer: server}
+func NewAdminHandler(server generatorpb.GeneratorClient, userUsecase usecase.UserUseCase, notificationUsecase usecase.NotificationUseCase) *AdminHandler {
+	return &AdminHandler{
+		generatorServer:     server,
+		userUsecase:         userUsecase,
+		notificationUsecase: notificationUsecase,
+	}
 }
 
 func (obj *AdminHandler) Generate1(w http.ResponseWriter, r *http.Request) {
@@ -33,6 +42,18 @@ func (obj *AdminHandler) Generate1(w http.ResponseWriter, r *http.Request) {
 	}()
 	if err != nil {
 		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	allowedTypes, allowedUsers, err := getAllowedAdminData(r.Context(), obj.notificationUsecase, obj.userUsecase)
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	errors := validators.ValidateGenerate1(request.Text, request.NotificationType, request.UserId, allowedTypes, allowedUsers)
+	if len(errors) > 0 {
+		response := web_helpers.NewValidationErrorResponse(requestId, errors)
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
@@ -71,6 +92,18 @@ func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
 	for i, userId := range request.UserIds {
 		userIds[i] = int64(userId)
 	}
+	allowedTypes, allowedUsers, err := getAllowedAdminData(r.Context(), obj.notificationUsecase, obj.userUsecase)
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	errors := validators.ValidateGenerateN(request.Number, request.NotificationTypes, request.UserIds, allowedTypes, allowedUsers)
+	if len(errors) > 0 {
+		response := web_helpers.NewValidationErrorResponse(requestId, errors)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
 	generatorResponse, err := obj.generatorServer.GenerateN(r.Context(), &generatorpb.GenerateNRequest{
 		NotificationTypes: request.NotificationTypes,
 		Number:            int64(request.Number),
@@ -83,4 +116,16 @@ func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
 	}
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
+}
+
+func getAllowedAdminData(ctx context.Context, notificationUsecase usecase.NotificationUseCase, userUsecase usecase.UserUseCase) ([]string, []int, error) {
+	allowedTypes, err := notificationUsecase.GetAllTypes(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	allowedUsers, err := userUsecase.GetAllIds(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	return allowedTypes, allowedUsers, nil
 }

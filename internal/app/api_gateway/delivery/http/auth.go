@@ -10,6 +10,7 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/validators"
 	"go.uber.org/zap"
 )
 
@@ -99,9 +100,16 @@ func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
+	errors := validators.ValidateRegisterUser(request.Email, request.Password, request.ConfirmPassword)
+	if len(errors) > 0 {
+		response := web_helpers.NewValidationErrorResponse(requestId, errors)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
 	authResponse, err := obj.authServer.Register(r.Context(), &authpb.RegisterRequest{
-		Email:    request.Email,
-		Password: request.Password,
+		Email:           request.Email,
+		Password:        request.Password,
+		ConfirmPassword: request.ConfirmPassword,
 	})
 	if err != nil {
 		response := web_helpers.NewUnauthorizedResponse(requestId)

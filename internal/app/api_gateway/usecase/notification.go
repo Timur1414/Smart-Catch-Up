@@ -11,6 +11,7 @@ type NotificationUseCase interface {
 	GetById(ctx context.Context, id int) (domain.Notification, error)
 	GetByUser(ctx context.Context, userId int) ([]domain.Notification, error)
 	GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error)
+	GetAllTypes(ctx context.Context) ([]string, error)
 }
 
 type Notification struct {
@@ -31,4 +32,8 @@ func (obj *Notification) GetByUser(ctx context.Context, userId int) ([]domain.No
 
 func (obj *Notification) GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error) {
 	return obj.repository.GetAllByUser(ctx, userId)
+}
+
+func (obj *Notification) GetAllTypes(ctx context.Context) ([]string, error) {
+	return obj.repository.GetAllTypes(ctx)
 }

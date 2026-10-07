@@ -10,6 +10,7 @@ import (
 type UserUseCase interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
+	GetAllIds(ctx context.Context) ([]int, error)
 	Update(ctx context.Context, user domain.User) error
 }
 
@@ -35,6 +36,10 @@ func (obj *User) GetById(ctx context.Context, id int) (domain.User, error) {
 func (obj *User) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (obj *User) GetAllIds(ctx context.Context) ([]int, error) {
+	return obj.repository.GetAllIds(ctx)
 }
 
 func (obj *User) Update(ctx context.Context, user domain.User) error {

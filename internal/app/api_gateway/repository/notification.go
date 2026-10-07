@@ -15,6 +15,7 @@ type NotificationRepository interface {
 	GetById(ctx context.Context, id int) (domain.Notification, error)
 	GetByUser(ctx context.Context, userId int, limit int) ([]domain.Notification, error)
 	GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error)
+	GetAllTypes(ctx context.Context) ([]string, error)
 }
 
 type NotificationPostgres struct {
@@ -116,6 +117,33 @@ func (obj *NotificationPostgres) GetAllByUser(ctx context.Context, userId int) (
 		}
 		res = append(res, notification)
 	}
+	log.Info("Query executed")
+	return res, nil
+}
+
+func (obj *NotificationPostgres) GetAllTypes(ctx context.Context) ([]string, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `select enumlabel from pg_enum where enumtypid = 'notification_type_enum'::regtype order by enumsortorder;`
+	var args []any
+	res := make([]string, 0)
+	start := time.Now()
+	rows, err := obj.db.Query(ctx, query)
+	if err != nil {
+		log.Error("failed to get all notification types", zap.Error(err))
+		return []string{}, err
+	}
+	duration := time.Since(start)
+	defer rows.Close()
+	for rows.Next() {
+		var notificationType string
+		err = rows.Scan(&notificationType)
+		if err != nil {
+			log.Error("failed to scan notification type", zap.Error(err))
+			return []string{}, err
+		}
+		res = append(res, notificationType)
+	}
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	log.Info("Query executed")
 	return res, nil
 }

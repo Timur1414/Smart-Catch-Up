@@ -26,12 +26,12 @@ func NewAuthServer(userUseCase usecase.UserUseCase, tokenUseCase usecase.JwtUseC
 }
 
 func (obj *AuthServer) Register(ctx context.Context, request *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
-	if request.GetEmail() == "" || request.GetPassword() == "" {
+	if request.GetEmail() == "" || request.GetPassword() == "" || request.GetConfirmPassword() == "" {
 		return nil, status.Error(codes.InvalidArgument, "email and password are required")
 	}
 	userId, err := obj.userUsecase.Create(ctx, domain.User{Email: request.GetEmail(), Password: request.GetPassword()})
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.AlreadyExists, err.Error())
 	}
 	accessToken, refreshToken, err := obj.tokenUsecase.CreatePair(ctx, userId)
 	if err != nil {
