@@ -14,16 +14,20 @@ type NotificationUseCase interface {
 }
 
 type Notification struct {
-	repository repository.NotificationRepository
+	notificationRepository repository.NotificationRepository
+	userRepository         repository.UserRepository
 }
 
-func NewNotification(repo repository.NotificationRepository) *Notification {
-	return &Notification{repository: repo}
+func NewNotification(repo repository.NotificationRepository, userRepo repository.UserRepository) *Notification {
+	return &Notification{
+		notificationRepository: repo,
+		userRepository:         userRepo,
+	}
 }
 
 func (obj *Notification) Create(ctx context.Context, notificationType string, text string, userId int) (int, error) {
 	notification := GenerateNotification(notificationType, text, userId, []int{})
-	return obj.repository.Create(ctx, notification)
+	return obj.notificationRepository.Create(ctx, notification)
 }
 
 func (obj *Notification) BulkCreate(ctx context.Context, notificationTypes []string, number int, userIds []int) error {
@@ -42,5 +46,5 @@ func (obj *Notification) BulkCreate(ctx context.Context, notificationTypes []str
 			Actions:          nil,
 		}
 	}
-	return obj.repository.BulkCreate(ctx, notifications)
+	return obj.notificationRepository.BulkCreate(ctx, notifications)
 }

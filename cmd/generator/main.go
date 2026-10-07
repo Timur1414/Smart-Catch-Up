@@ -59,8 +59,9 @@ func main() {
 	log.Info("Connected to Postgres")
 
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
+	userRepo := repository.NewUserPostgres(dbPool)
 	log.Info("Repository initialized")
-	notificationUsecase := usecase.NewNotification(notificationRepo)
+	notificationUsecase := usecase.NewNotification(notificationRepo, userRepo)
 	log.Info("UseCase initialized")
 	generatorServer := generatorDelivery.NewGeneratorServer(notificationUsecase)
 	log.Info("Generator gRPC server initialized")
