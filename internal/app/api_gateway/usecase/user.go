@@ -11,6 +11,7 @@ type UserUseCase interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	GetAllIds(ctx context.Context) ([]int, error)
+	GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error)
 	Update(ctx context.Context, user domain.User) error
 }
 
@@ -40,6 +41,10 @@ func (obj *User) GetByEmail(ctx context.Context, email string) (domain.User, err
 
 func (obj *User) GetAllIds(ctx context.Context) ([]int, error) {
 	return obj.repository.GetAllIds(ctx)
+}
+
+func (obj *User) GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error) {
+	return obj.repository.GetAllShortUsers(ctx)
 }
 
 func (obj *User) Update(ctx context.Context, user domain.User) error {

@@ -17,6 +17,7 @@ type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	GetAllIds(ctx context.Context) ([]int, error)
+	GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error)
 	Update(ctx context.Context, user domain.User) error
 }
 
@@ -113,6 +114,39 @@ func (obj *UserPostgres) GetAllIds(ctx context.Context) ([]int, error) {
 	return res, nil
 }
 
+func (obj *UserPostgres) GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `select U.id, S.first_name, S.last_name from "user" U join settings S on U.id = S.user_id where U.active = true;`
+	var args []any
+	resUsers := make([]domain.User, 0)
+	resSettings := make([]domain.Settings, 0)
+	start := time.Now()
+	rows, err := obj.db.Query(ctx, query, args...)
+	if err != nil {
+		log.Error("failed to get all users ids", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []domain.User{}, []domain.Settings{}, domain.ErrNothingInTable
+		}
+		return []domain.User{}, []domain.Settings{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var firstName, lastName string
+		err = rows.Scan(&id, &firstName, &lastName)
+		if err != nil {
+			log.Error("failed to get all users ids", zap.Error(err))
+			return []domain.User{}, []domain.Settings{}, err
+		}
+		resUsers = append(resUsers, domain.User{Id: id})
+		resSettings = append(resSettings, domain.Settings{FirstName: firstName, LastName: lastName})
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return resUsers, resSettings, nil
+}
+
 func (obj *UserPostgres) Update(ctx context.Context, user domain.User) error {
 	//TODO implement me
 	panic("implement me")
@@ -128,12 +162,12 @@ func NewSettingsPostgres(db *pgxpool.Pool) *SettingsPostgres {
 
 func (obj *SettingsPostgres) GetById(ctx context.Context, id int) (domain.Settings, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select user_id, "interval", avatar_url, first_name, last_name, updated_at from settings where id = $1;`
+	query := `select user_id, avatar_url, first_name, last_name, updated_at from settings where id = $1;`
 	args := []any{id}
 	res := domain.Settings{Id: id}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.UserId, &res.Interval, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.UserId, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
 	if err != nil {
 		log.Error("failed to get settings by id", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -152,12 +186,12 @@ func (obj *SettingsPostgres) GetById(ctx context.Context, id int) (domain.Settin
 
 func (obj *SettingsPostgres) GetByUser(ctx context.Context, user domain.User) (domain.Settings, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, "interval", avatar_url, first_name, last_name, updated_at from settings where user_id = $1;`
+	query := `select id,avatar_url, first_name, last_name, updated_at from settings where user_id = $1;`
 	args := []any{user.Id}
 	res := domain.Settings{UserId: user.Id}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.Interval, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
 	if err != nil {
 		log.Error("failed to get settings by user id", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {

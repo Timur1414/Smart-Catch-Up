@@ -6,7 +6,7 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	web_helpers2 "github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 )
 
 type UserHandler struct {
@@ -28,18 +28,18 @@ func (obj *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	userId := context_helper.GetUserIdFromContext(r.Context())
 	user, err := obj.userUsecase.GetById(r.Context(), userId)
 	if err != nil {
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	settings, err := obj.settingsUsecase.GetByUser(r.Context(), user)
 	if err != nil {
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	response := NewUserResponse(requestId, user, settings)
-	web_helpers2.WriteResponseJSON(w, response.Code, response)
+	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
@@ -59,10 +59,24 @@ func (obj *UserHandler) IsStaff(w http.ResponseWriter, r *http.Request) {
 	userId := context_helper.GetUserIdFromContext(r.Context())
 	user, err := obj.userUsecase.GetById(r.Context(), userId)
 	if err != nil {
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	request := NewUserRoleResponse(requestId, user)
-	web_helpers2.WriteResponseJSON(w, request.Code, request)
+	web_helpers.WriteResponseJSON(w, request.Code, request)
+}
+
+func (obj *UserHandler) GetAllowedIds(w http.ResponseWriter, r *http.Request) {
+	log := logger.GetLoggerWithRequestId(r.Context())
+	log.Info("Get allowed user ids request")
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
+	users, settings, err := obj.userUsecase.GetAllShortUsers(r.Context())
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	response := NewAllowedUserIdsResponse(requestId, users, settings)
+	web_helpers.WriteResponseJSON(w, response.Code, response)
 }

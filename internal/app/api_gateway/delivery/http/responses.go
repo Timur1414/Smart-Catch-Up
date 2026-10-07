@@ -84,6 +84,18 @@ func NewUserResponse(requestId string, user domain.User, settings domain.Setting
 	}
 }
 
+type ShortUserResponse struct {
+	Id       int    `json:"id"`
+	FullName string `json:"full_name"`
+}
+
+func NewShortUserResponse(user domain.User, settings domain.Settings) ShortUserResponse {
+	return ShortUserResponse{
+		Id:       user.Id,
+		FullName: settings.FirstName + " " + settings.LastName,
+	}
+}
+
 type UpdateProfileResponse UserResponse
 
 func NewUpdateProfileResponse(requestId string, code int, message string, user domain.User, settings domain.Settings) UpdateProfileResponse {
@@ -199,5 +211,33 @@ func NewNotificationsResponse(requestId string, notifications []domain.Notificat
 	return NotificationsResponse{
 		UuidResponse:  web_helpers.NewUuidResponse(http.StatusOK, "Ok", requestId),
 		Notifications: notificationResponses,
+	}
+}
+
+type AllowedUserIdsResponse struct {
+	web_helpers.UuidResponse
+	Users []ShortUserResponse `json:"users"`
+}
+
+func NewAllowedUserIdsResponse(requestId string, users []domain.User, settings []domain.Settings) AllowedUserIdsResponse {
+	usersResponse := make([]ShortUserResponse, len(users))
+	for i := range len(users) {
+		usersResponse[i] = NewShortUserResponse(users[i], settings[i])
+	}
+	return AllowedUserIdsResponse{
+		UuidResponse: web_helpers.NewUuidResponse(http.StatusOK, "Ok", requestId),
+		Users:        usersResponse,
+	}
+}
+
+type AllowedNotificationTypesResponse struct {
+	web_helpers.UuidResponse
+	Types []string `json:"types"`
+}
+
+func NewAllowedNotificationTypesResponse(requestId string, types []string) AllowedNotificationTypesResponse {
+	return AllowedNotificationTypesResponse{
+		UuidResponse: web_helpers.NewUuidResponse(http.StatusOK, "Ok", requestId),
+		Types:        types,
 	}
 }

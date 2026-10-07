@@ -14,7 +14,6 @@ type User struct {
 type Settings struct {
 	Id        int
 	UserId    int
-	Interval  time.Duration
 	Important []string
 	AvatarUrl string
 	FirstName string

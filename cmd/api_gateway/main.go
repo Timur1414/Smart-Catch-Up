@@ -142,6 +142,8 @@ func main() {
 	mux.HandleFunc("GET /notifications/all", notificationsHandler.GetAll)
 	mux.HandleFunc("POST /admin/generate", adminHandler.Generate1)
 	mux.HandleFunc("POST /admin/generate_n", adminHandler.GenerateN)
+	mux.HandleFunc("GET /users_ids", userHandler.GetAllowedIds)
+	mux.HandleFunc("GET /notification_types", notificationsHandler.GetAllTypes)
 
 	handler := middleware.AuthMiddleware(mux, authClient)
 	handler = middleware.CORSMiddleware(handler)
