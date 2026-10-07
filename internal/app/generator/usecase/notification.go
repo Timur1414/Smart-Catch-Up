@@ -22,18 +22,7 @@ func NewNotification(repo repository.NotificationRepository) *Notification {
 }
 
 func (obj *Notification) Create(ctx context.Context, notificationType string, text string, userId int) (int, error) {
-	notification := domain.Notification{
-		NotificationType: notificationType,
-		RecipientId:      userId,
-		ActorId:          1,
-		ActorName:        "system",
-		ObjectId:         0,
-		ObjectType:       "",
-		CreatedAt:        time.Now(),
-		ReadAt:           time.Time{},
-		Payload:          text,
-		Actions:          nil,
-	}
+	notification := GenerateNotification(notificationType, text, userId, []int{})
 	return obj.repository.Create(ctx, notification)
 }
 
