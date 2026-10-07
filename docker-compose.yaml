@@ -58,6 +58,23 @@ services:
     networks:
       - scu-network
 
+  seed:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile_seed
+    container_name: seed
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    restart: no
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+    networks:
+      - scu-network
+
   generator:
     build:
       context: .
@@ -65,7 +82,7 @@ services:
     container_name: generator
     restart: always
     depends_on:
-      migrations:
+      seed:
         condition: service_completed_successfully
     read_only: true
     security_opt:
@@ -91,7 +108,7 @@ services:
     container_name: auth
     restart: always
     depends_on:
-      migrations:
+      seed:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
@@ -123,7 +140,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrations:
+      seed:
         condition: service_completed_successfully
       auth:
         condition: service_started

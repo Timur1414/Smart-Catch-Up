@@ -1,0 +1,18 @@
+FROM golang:1.26-alpine AS builder
+
+WORKDIR /app
+RUN apk add --no-cache git ca-certificates tzdata
+COPY go.mod go.sum ./
+RUN go mod download
+COPY migrations/seed/main.go ./main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main main.go
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata curl
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+WORKDIR /app
+RUN mkdir -p /app/log && chown -R appuser:appgroup /app
+COPY --from=builder /app/main .
+USER appuser
+CMD ["./main"]
