@@ -26,7 +26,11 @@ func NewNotification(repo repository.NotificationRepository, userRepo repository
 }
 
 func (obj *Notification) Create(ctx context.Context, notificationType string, text string, userId int) (int, error) {
-	notification := GenerateNotification(notificationType, text, userId, []int{})
+	allowedActors, err := obj.userRepository.GetActors(ctx, userId)
+	if err != nil {
+		return 0, err
+	}
+	notification := GenerateNotification(notificationType, text, userId, allowedActors)
 	return obj.notificationRepository.Create(ctx, notification)
 }
 
