@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -37,6 +39,9 @@ func (obj *NotificationPostgres) GetById(ctx context.Context, id int) (domain.No
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&cluster, &res.NotificationType, &res.RecipientId, &res.ActorId, &res.ActorName, &res.ObjectId, &res.ObjectType, &res.CreatedAt, &readAt, &res.Payload)
 	if err != nil {
 		log.Error("failed to get notification", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Notification{}, domain.ErrNothingInTable
+		}
 		return domain.Notification{}, err
 	}
 	duration := time.Since(start)
@@ -59,6 +64,9 @@ func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limi
 	rows, err := obj.db.Query(ctx, query, args...)
 	if err != nil {
 		log.Error("failed to get notifications by user", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []domain.Notification{}, domain.ErrNothingInTable
+		}
 		return []domain.Notification{}, err
 	}
 	duration := time.Since(start)
@@ -94,6 +102,9 @@ func (obj *NotificationPostgres) GetAllByUser(ctx context.Context, userId int) (
 	rows, err := obj.db.Query(ctx, query, args...)
 	if err != nil {
 		log.Error("failed to get all notifications by user", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []domain.Notification{}, domain.ErrNothingInTable
+		}
 		return []domain.Notification{}, err
 	}
 	duration := time.Since(start)
@@ -130,6 +141,9 @@ func (obj *NotificationPostgres) GetAllTypes(ctx context.Context) ([]string, err
 	rows, err := obj.db.Query(ctx, query)
 	if err != nil {
 		log.Error("failed to get all notification types", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []string{}, domain.ErrNothingInTable
+		}
 		return []string{}, err
 	}
 	duration := time.Since(start)

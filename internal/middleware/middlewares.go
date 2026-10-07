@@ -9,9 +9,9 @@ import (
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	apiDelivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
-	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	web_helpers2 "github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -47,8 +47,8 @@ func PanicMiddleware(next http.Handler) http.Handler {
 						zap.String("request_id", requestId),
 						zap.Any("err", err))
 				}
-				response := web_helpers.NewServerErrorResponse(requestId)
-				web_helpers.WriteResponseJSON(w, response.Code, response)
+				response := web_helpers2.NewServerErrorResponse(requestId)
+				web_helpers2.WriteResponseJSON(w, response.Code, response)
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -95,14 +95,14 @@ func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handle
 		cookie, err := apiDelivery.GetAccessCookie(r.Context(), r)
 		if err != nil {
 			log.Error("[auth middleware] failed to get access cookie", zap.Error(err))
-			response := web_helpers.NewUnauthorizedResponse(requestId)
-			web_helpers.WriteResponseJSON(w, response.Code, response)
+			response := web_helpers2.NewUnauthorizedResponse(requestId)
+			web_helpers2.WriteResponseJSON(w, response.Code, response)
 			return
 		}
 		authResponse, err := authServer.IsAuth(r.Context(), &authpb.IsAuthRequest{AccessToken: cookie.Value})
 		if err != nil || !authResponse.GetIsAuth() {
-			response := web_helpers.NewUnauthorizedResponse(requestId)
-			web_helpers.WriteResponseJSON(w, response.Code, response)
+			response := web_helpers2.NewUnauthorizedResponse(requestId)
+			web_helpers2.WriteResponseJSON(w, response.Code, response)
 			return
 		}
 		ctx := context.WithValue(r.Context(), context_helper.ContextKeyUser, int(authResponse.GetUserId()))

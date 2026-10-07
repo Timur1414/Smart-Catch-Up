@@ -1,6 +1,8 @@
 package validators
 
-import "github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
+import (
+	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
+)
 
 func ValidateRegisterUser(email, password, confirmPassword string) []web_helpers.ValidationError {
 	var errors []web_helpers.ValidationError

@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"errors"
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/domain"
@@ -31,11 +32,17 @@ func (obj *AuthServer) Register(ctx context.Context, request *authpb.RegisterReq
 	}
 	userId, err := obj.userUsecase.Create(ctx, domain.User{Email: request.GetEmail(), Password: request.GetPassword()})
 	if err != nil {
-		return nil, status.Error(codes.AlreadyExists, err.Error())
+		if errors.Is(err, domain.ErrUserAlreadyExists) || errors.Is(err, domain.ErrSettingsAlreadyExists) {
+			return nil, status.Error(codes.AlreadyExists, err.Error())
+		}
+		if errors.Is(err, domain.ErrFailedToHashPassword) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	accessToken, refreshToken, err := obj.tokenUsecase.CreatePair(ctx, userId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 	return &authpb.RegisterResponse{
 		UserId:       int64(userId),
@@ -74,7 +81,7 @@ func (obj *AuthServer) Refresh(ctx context.Context, request *authpb.RefreshReque
 	}
 	accessToken, refreshToken, err := obj.tokenUsecase.CreatePair(ctx, userId)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 	return &authpb.RefreshResponse{
 		UserId:       int64(userId),
@@ -92,7 +99,7 @@ func (obj *AuthServer) Logout(ctx context.Context, request *authpb.LogoutRequest
 	if err != nil {
 		return &authpb.LogoutResponse{
 			Success: false,
-		}, err
+		}, status.Error(codes.Unauthenticated, err.Error())
 	}
 	log.Info("Logout", zap.Int64("user_id", request.GetUserId()))
 	return &authpb.LogoutResponse{

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
-	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 )
 
 type LoginSuccessResponse web_helpers.UuidResponse

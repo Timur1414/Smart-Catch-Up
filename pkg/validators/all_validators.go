@@ -1,19 +1,17 @@
 package validators
 
 import (
-	"errors"
 	"net/mail"
 	"slices"
-	"strconv"
 )
 
 func validatePassword(passwordStr string) error {
 	password := []rune(passwordStr)
 	if len(password) < 8 {
-		return errors.New("password must be at least 8 characters")
+		return ErrPasswordTooShort
 	}
 	if len(password) > 72 {
-		return errors.New("password must be less than 72 characters")
+		return ErrPasswordTooLong
 	}
 	hasLower := false
 	hasUpper := false
@@ -32,65 +30,65 @@ func validatePassword(passwordStr string) error {
 		}
 	}
 	if !hasUpper {
-		return errors.New("password must contain uppercase letters")
+		return ErrPasswordDoNotContainsUppercase
 	}
 	if !hasLower {
-		return errors.New("password must contain lowercase letters")
+		return ErrPasswordDoNotContainsLowercase
 	}
 	if !hasDigit {
-		return errors.New("password must contain digits")
+		return ErrPasswordDoNotContainsDigits
 	}
 	if hasInvalid {
-		return errors.New("password must contain invalid characters")
+		return ErrPasswordContainsInvalidCharacters
 	}
 	return nil
 }
 
 func validateConfirmPassword(password, confirmPassword string) error {
 	if password != confirmPassword {
-		return errors.New("password must match confirm password")
+		return ErrPasswordsNotEqual
 	}
 	return nil
 }
 
 func validateEmail(email string) error {
 	if len(email) == 0 || len(email) >= 255 {
-		return errors.New("email address must be between 0 and 255 characters")
+		return ErrEmailInvalidSize
 	}
 	addr, err := mail.ParseAddress(email)
 	if err != nil {
-		return errors.New("email address must be a valid email address")
+		return ErrEmailInvalid
 	}
 	if addr.Address != email {
-		return errors.New("email address must be a valid email address")
+		return ErrEmailInvalid
 	}
 	return nil
 }
 
 func validateMinValue(value, min int) error {
 	if value < min {
-		return errors.New("value must be greater than or equal to " + strconv.Itoa(min))
+		return ErrLessThenMin
 	}
 	return nil
 }
 
 func validateMaxValue(value, max int) error {
 	if value > max {
-		return errors.New("value must be less than or equal to " + strconv.Itoa(max))
+		return ErrGreaterThanMax
 	}
 	return nil
 }
 
 func validateNotEmpty(value string) error {
 	if value == "" {
-		return errors.New("value must not be empty")
+		return ErrEmpty
 	}
 	return nil
 }
 
 func validateContains[T comparable](value T, allowedValues []T) error {
 	if !slices.Contains(allowedValues, value) {
-		return errors.New("value not allowed")
+		return ErrNotAllowed
 	}
 	return nil
 }
@@ -99,7 +97,7 @@ func validateAllContains[T comparable](values, allowedValues []T) error {
 	for _, value := range values {
 		err := validateContains(value, allowedValues)
 		if err != nil {
-			return err
+			return ErrNotAllowed
 		}
 	}
 	return nil

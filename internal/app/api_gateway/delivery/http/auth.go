@@ -7,10 +7,10 @@ import (
 	"time"
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
-	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/validators"
+	web_helpers2 "github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 	"go.uber.org/zap"
 )
 
@@ -42,8 +42,9 @@ func (obj *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if err != nil {
-		response := web_helpers.NewServerErrorResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		log.Error("failed to decode request", zap.Error(err))
+		response := web_helpers2.NewServerErrorResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	authResponse, err := obj.authServer.Login(r.Context(), &authpb.LoginRequest{
@@ -51,13 +52,13 @@ func (obj *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		Password: request.Password,
 	})
 	if err != nil {
-		response := web_helpers.NewUnauthorizedResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewUnauthorizedResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
-	response := web_helpers.NewOkResponse()
-	web_helpers.WriteResponseJSON(w, response.Code, response)
+	response := web_helpers2.NewOkResponse()
+	web_helpers2.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
@@ -66,21 +67,21 @@ func (obj *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	log.Info("Refresh request")
 	refreshToken, err := GetRefreshCookie(r.Context(), r)
 	if err != nil {
-		response := web_helpers.NewUnauthorizedResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewUnauthorizedResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	authResponse, err := obj.authServer.Refresh(r.Context(), &authpb.RefreshRequest{
 		RefreshToken: refreshToken.Value,
 	})
 	if err != nil {
-		response := web_helpers.NewUnauthorizedResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewUnauthorizedResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
-	response := web_helpers.NewOkResponse()
-	web_helpers.WriteResponseJSON(w, response.Code, response)
+	response := web_helpers2.NewOkResponse()
+	web_helpers2.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -96,14 +97,16 @@ func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if err != nil {
-		response := web_helpers.NewServerErrorResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		log.Error("failed to decode request", zap.Error(err))
+		response := web_helpers2.NewServerErrorResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	errors := validators.ValidateRegisterUser(request.Email, request.Password, request.ConfirmPassword)
 	if len(errors) > 0 {
-		response := web_helpers.NewValidationErrorResponse(requestId, errors)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		log.Warn("validation errors", zap.Any("errors", errors))
+		response := web_helpers2.NewValidationErrorResponse(requestId, errors)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	authResponse, err := obj.authServer.Register(r.Context(), &authpb.RegisterRequest{
@@ -112,13 +115,13 @@ func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		ConfirmPassword: request.ConfirmPassword,
 	})
 	if err != nil {
-		response := web_helpers.NewUnauthorizedResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewUnauthorizedResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
-	response := web_helpers.NewOkResponse()
-	web_helpers.WriteResponseJSON(w, response.Code, response)
+	response := web_helpers2.NewOkResponse()
+	web_helpers2.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -128,14 +131,14 @@ func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	userId := context_helper.GetUserIdFromContext(r.Context())
 	accessToken, err := GetAccessCookie(r.Context(), r)
 	if err != nil {
-		response := web_helpers.NewUnauthorizedResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewUnauthorizedResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	refreshToken, err := GetRefreshCookie(r.Context(), r)
 	if err != nil {
-		response := web_helpers.NewUnauthorizedResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewUnauthorizedResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	authResponse, err := obj.authServer.Logout(r.Context(), &authpb.LogoutRequest{
@@ -144,13 +147,13 @@ func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: refreshToken.Value,
 	})
 	if err != nil || !authResponse.GetSuccess() {
-		response := web_helpers.NewUnauthorizedResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewUnauthorizedResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	ClearAuthCookies(w)
-	response := web_helpers.NewOkResponse()
-	web_helpers.WriteResponseJSON(w, response.Code, response)
+	response := web_helpers2.NewOkResponse()
+	web_helpers2.WriteResponseJSON(w, response.Code, response)
 }
 
 func GetAccessCookie(ctx context.Context, r *http.Request) (*http.Cookie, error) {

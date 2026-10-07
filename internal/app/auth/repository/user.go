@@ -8,6 +8,7 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/domain"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -42,9 +43,9 @@ func (obj *UserPostgres) Create(ctx context.Context, user domain.User) (int, err
 		log.Error("failed to create user (db error)", zap.Error(pgErr))
 		switch pgErr.Code {
 		case pgerrcode.UniqueViolation:
-			return -1, errors.New("user already exists")
+			return -1, domain.ErrUserAlreadyExists
 		case pgerrcode.CheckViolation:
-			return -1, errors.New("DuplicatedData")
+			return -1, domain.ErrDuplicatedData
 		default:
 			return -1, pgErr
 		}
@@ -67,9 +68,9 @@ func (obj *UserPostgres) Create(ctx context.Context, user domain.User) (int, err
 		log.Error("failed to create settings (db error)", zap.Error(pgErr))
 		switch pgErr.Code {
 		case pgerrcode.UniqueViolation:
-			return -1, errors.New("settings already exists")
+			return -1, domain.ErrSettingsAlreadyExists
 		case pgerrcode.CheckViolation:
-			return -1, errors.New("DuplicatedData")
+			return -1, domain.ErrDuplicatedData
 		default:
 			return -1, pgErr
 		}
@@ -93,6 +94,9 @@ func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, erro
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.IsStaff, &res.CreatedAt, &updatedAt, &res.Email, &res.Password)
 	if err != nil {
 		log.Error("failed to get user by id", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrNothingInTable
+		}
 		return domain.User{}, err
 	}
 	duration := time.Since(start)
@@ -114,6 +118,9 @@ func (obj *UserPostgres) GetByEmail(ctx context.Context, email string) (domain.U
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.IsStaff, &res.CreatedAt, &updatedAt, &res.Password)
 	if err != nil {
 		log.Error("failed to get user by email", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrNothingInTable
+		}
 		return domain.User{}, err
 	}
 	duration := time.Since(start)

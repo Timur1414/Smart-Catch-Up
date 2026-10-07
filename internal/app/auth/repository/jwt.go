@@ -58,7 +58,7 @@ func (obj *RefreshTokenRedis) GetByUser(ctx context.Context, userId int) (domain
 	})
 	duration := time.Since(startTime)
 	if errors.Is(err, redis.Nil) {
-		return domain.RefreshToken{}, errors.New("uuid not found")
+		return domain.RefreshToken{}, domain.ErrNotFound
 	} else if err != nil {
 		log.Warn("Failed to get jwt", zap.Error(err))
 		return domain.RefreshToken{}, err

@@ -6,9 +6,9 @@ import (
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
-	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 )
 
 type DigestHandler struct {

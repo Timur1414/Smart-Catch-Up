@@ -2,10 +2,12 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -43,6 +45,9 @@ func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, erro
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.IsStaff, &res.CreatedAt, &updatedAt, &res.Email)
 	if err != nil {
 		log.Error("failed to get user by id", zap.Int("id", id), zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrNothingInTable
+		}
 		return domain.User{}, err
 	}
 	duration := time.Since(start)
@@ -64,6 +69,9 @@ func (obj *UserPostgres) GetByEmail(ctx context.Context, email string) (domain.U
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.IsStaff, &res.CreatedAt, &updatedAt)
 	if err != nil {
 		log.Error("failed to get user by email", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.User{}, domain.ErrNothingInTable
+		}
 		return domain.User{}, err
 	}
 	duration := time.Since(start)
@@ -84,6 +92,9 @@ func (obj *UserPostgres) GetAllIds(ctx context.Context) ([]int, error) {
 	rows, err := obj.db.Query(ctx, query, args...)
 	if err != nil {
 		log.Error("failed to get all users ids", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []int{}, domain.ErrNothingInTable
+		}
 		return []int{}, err
 	}
 	defer rows.Close()
@@ -125,6 +136,9 @@ func (obj *SettingsPostgres) GetById(ctx context.Context, id int) (domain.Settin
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.UserId, &res.Interval, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
 	if err != nil {
 		log.Error("failed to get settings by id", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Settings{}, domain.ErrNothingInTable
+		}
 		return domain.Settings{}, err
 	}
 	duration := time.Since(start)
@@ -146,6 +160,9 @@ func (obj *SettingsPostgres) GetByUser(ctx context.Context, user domain.User) (d
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.Interval, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
 	if err != nil {
 		log.Error("failed to get settings by user id", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Settings{}, domain.ErrNothingInTable
+		}
 		return domain.Settings{}, err
 	}
 	duration := time.Since(start)

@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -33,10 +32,10 @@ type Jwt struct {
 
 func NewJwt(repo repository.RefreshTokenRepository, secret string, version string) (*Jwt, error) {
 	if len(secret) < 8 {
-		return nil, errors.New("secret too short")
+		return nil, domain.ErrSecretTooShort
 	}
 	if version == "" {
-		return nil, errors.New("version too short")
+		return nil, domain.ErrVersionIsEmpty
 	}
 	return &Jwt{
 		repository: repo,

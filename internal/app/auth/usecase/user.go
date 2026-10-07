@@ -35,7 +35,7 @@ func (obj *User) Create(ctx context.Context, user domain.User) (int, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword(origPassword, bcrypt.DefaultCost)
 	if err != nil {
 		log.Warn("failed to hash password", zap.Error(err))
-		return -1, err
+		return -1, domain.ErrFailedToHashPassword
 	}
 	userToCreate.Password = string(hashedPassword)
 	return obj.repository.Create(ctx, userToCreate)

@@ -7,10 +7,10 @@ import (
 
 	generatorpb "github.com/Timur1414/Smart-Catch-Up/api/proto/generator"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
-	"github.com/Timur1414/Smart-Catch-Up/internal/web_helpers"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/validators"
+	web_helpers2 "github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 	"go.uber.org/zap"
 )
 
@@ -41,20 +41,22 @@ func (obj *AdminHandler) Generate1(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if err != nil {
-		response := web_helpers.NewServerErrorResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		log.Error("failed to parse request", zap.Error(err))
+		response := web_helpers2.NewServerErrorResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	allowedTypes, allowedUsers, err := getAllowedAdminData(r.Context(), obj.notificationUsecase, obj.userUsecase)
 	if err != nil {
-		response := web_helpers.NewServerErrorResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewServerErrorResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	errors := validators.ValidateGenerate1(request.Text, request.NotificationType, request.UserId, allowedTypes, allowedUsers)
 	if len(errors) > 0 {
-		response := web_helpers.NewValidationErrorResponse(requestId, errors)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		log.Warn("validation errors", zap.Any("errors", errors))
+		response := web_helpers2.NewValidationErrorResponse(requestId, errors)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	generatorResponse, err := obj.generatorServer.Generate1(r.Context(), &generatorpb.Generate1Request{
@@ -63,12 +65,12 @@ func (obj *AdminHandler) Generate1(w http.ResponseWriter, r *http.Request) {
 		UserId:           int64(request.UserId),
 	})
 	if err != nil || !generatorResponse.GetStatus() {
-		response := web_helpers.NewServerErrorResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewServerErrorResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	response := web_helpers.NewOkResponse()
-	web_helpers.WriteResponseJSON(w, response.Code, response)
+	response := web_helpers2.NewOkResponse()
+	web_helpers2.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
@@ -84,8 +86,9 @@ func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	if err != nil {
-		response := web_helpers.NewServerErrorResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		log.Error("failed to parse request", zap.Error(err))
+		response := web_helpers2.NewServerErrorResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	userIds := make([]int64, len(request.UserIds))
@@ -94,14 +97,15 @@ func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
 	}
 	allowedTypes, allowedUsers, err := getAllowedAdminData(r.Context(), obj.notificationUsecase, obj.userUsecase)
 	if err != nil {
-		response := web_helpers.NewServerErrorResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewServerErrorResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	errors := validators.ValidateGenerateN(request.Number, request.NotificationTypes, request.UserIds, allowedTypes, allowedUsers)
 	if len(errors) > 0 {
-		response := web_helpers.NewValidationErrorResponse(requestId, errors)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		log.Warn("validation errors", zap.Any("errors", errors))
+		response := web_helpers2.NewValidationErrorResponse(requestId, errors)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	generatorResponse, err := obj.generatorServer.GenerateN(r.Context(), &generatorpb.GenerateNRequest{
@@ -110,12 +114,12 @@ func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
 		UserIds:           userIds,
 	})
 	if err != nil || !generatorResponse.GetStatus() {
-		response := web_helpers.NewServerErrorResponse(requestId)
-		web_helpers.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers2.NewServerErrorResponse(requestId)
+		web_helpers2.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	response := web_helpers.NewOkResponse()
-	web_helpers.WriteResponseJSON(w, response.Code, response)
+	response := web_helpers2.NewOkResponse()
+	web_helpers2.WriteResponseJSON(w, response.Code, response)
 }
 
 func getAllowedAdminData(ctx context.Context, notificationUsecase usecase.NotificationUseCase, userUsecase usecase.UserUseCase) ([]string, []int, error) {
