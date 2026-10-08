@@ -41,7 +41,7 @@ var payloadStrategies = map[string]PayloadGenerator{
 		templates := []string{
 			"Заказ #{id} передан в службу доставки ({city})",
 			"Статус заказа #{id} изменен: «В пути»",
-			"Товар «{product}» из заказа #{id} готов к выдаче",
+			"Товар «{productname}» из заказа #{id} готов к выдаче",
 		}
 		tpl := pickRandom(templates)
 		res, err := gofakeit.Generate(tpl)
@@ -78,7 +78,7 @@ var payloadStrategies = map[string]PayloadGenerator{
 	},
 
 	"comment": func(notifType string, objectId int) string {
-		return fmt.Sprintf("оставил комментарий: «%s»", gofakeit.Comment())
+		return fmt.Sprintf("оставил комментарий: «%s»", generateComment())
 	},
 
 	"reaction": func(notifType string, objectId int) string {
@@ -112,12 +112,15 @@ var payloadStrategies = map[string]PayloadGenerator{
 		}
 		return res
 	},
+
+	"default": func(notifType string, objectId int) string {
+		return generateComment()
+	},
 }
 
 func GeneratePayloadByType(notificationType string, objectId int) string {
 	category := resolveCategory(notificationType)
 	generator, exists := payloadStrategies[category]
-	// TODO ? Try https://github.com/LibreTranslate/LibreTranslate to translate gofakeit
 	if !exists {
 		return gofakeit.Sentence(6)
 	}
@@ -150,4 +153,59 @@ func pickRandom(items []string) string {
 		return ""
 	}
 	return items[rand.Intn(len(items))]
+}
+
+var russianComments = []string{
+	"Отличный пост, спасибо за полезную информацию!",
+	"Полностью согласен с автором 👍",
+	"А есть примеры кода или ссылка на репозиторий?",
+	"Интересная мысль, но на практике часто возникают нюансы.",
+	"Очень вовремя, как раз сейчас разбираюсь с этой темой 🔥",
+	"Не совсем понял один момент, можно подробнее?",
+	"Круто расписано, сохранил себе в закладки 📌",
+	"Давно искал внятное объяснение, спасибо большое!",
+	"Жду продолжения, очень интересно 🚀",
+	"Спорное утверждение, но аргументация хорошая.",
+	"Это база 💯",
+	"Полезно, переслал коллегам в рабочий чат.",
+	"А как это решение покажет себя при высоких нагрузках?",
+	"Поддерживаю! У нас на проекте была аналогичная ситуация.",
+	"Супер, всё четко и по делу.",
+}
+
+func generateComment() string {
+	return pickRandom(russianComments)
+}
+
+var russianCities = []string{
+	"Москва", "Санкт-Петербург", "Новосибирск", "Екатеринбург", "Казань",
+	"Нижний Новгород", "Челябинск", "Красноярск", "Самара", "Уфа",
+	"Ростов-на-Дону", "Омск", "Краснодар", "Воронеж", "Пермь", "Волгоград",
+}
+
+var russianBuzzwords = []string{
+	"микросервисы", "нейросети и AI", "высокие нагрузки",
+	"чистую архитектуру", "Kubernetes", "DevOps-практики",
+	"Go против Rust", "безопасность API", "рефакторинг легаси",
+}
+
+func init() {
+	gofakeit.AddFuncLookup("city", gofakeit.Info{
+		Display:     "City",
+		Category:    "address",
+		Description: "Случайный российский город",
+		Output:      "string",
+		Generate: func(f *gofakeit.Faker, m *gofakeit.MapParams, info *gofakeit.Info) (any, error) {
+			return pickRandom(russianCities), nil
+		},
+	})
+	gofakeit.AddFuncLookup("buzzword", gofakeit.Info{
+		Display:     "Buzzword",
+		Category:    "word",
+		Description: "IT-термины на русском",
+		Output:      "string",
+		Generate: func(f *gofakeit.Faker, m *gofakeit.MapParams, info *gofakeit.Info) (any, error) {
+			return pickRandom(russianBuzzwords), nil
+		},
+	})
 }
