@@ -7,13 +7,17 @@ import (
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/generator/domain"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/brianvoe/gofakeit/v7"
+	"go.uber.org/zap"
 )
 
 func GenerateNotification(notificationType string, text string, recipientId int, actors []domain.NotificationActor) domain.Notification {
 	actor := actors[rand.Intn(len(actors))]
-	now := time.Now()
+	now := time.Now().UTC()
 	createdAt := gofakeit.DateRange(now.Add(-5*24*time.Hour), now)
+	log := logger.GetLogger()
+	log.Debug("generated time", zap.Time("created_at", createdAt))
 	objectId := gofakeit.Number(100, 10000)
 	payload := text
 	if payload == "" {

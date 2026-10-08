@@ -54,8 +54,8 @@ func (obj *Jwt) CreatePair(ctx context.Context, userId int) (string, string, err
 	}
 
 	claims := jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(repository.AccessTokenExpirationTime)),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(repository.AccessTokenExpirationTime).UTC()),
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		Issuer:    obj.GetVersion(),
 		Subject:   userIdStr,
 	}
@@ -68,12 +68,12 @@ func (obj *Jwt) CreatePair(ctx context.Context, userId int) (string, string, err
 		return "", "", err
 	}
 
-	refreshExpirationTime := time.Now().Add(repository.RefreshTokenExpirationTime)
+	refreshExpirationTime := time.Now().Add(repository.RefreshTokenExpirationTime).UTC()
 	refreshId := uuid.New().String()
 	refreshClaims := jwt.RegisteredClaims{
 		ID:        refreshId,
 		ExpiresAt: jwt.NewNumericDate(refreshExpirationTime),
-		IssuedAt:  jwt.NewNumericDate(time.Now()),
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		Issuer:    obj.GetVersion(),
 		Subject:   userIdStr,
 	}
@@ -152,7 +152,7 @@ func (obj *Jwt) CheckRefreshToken(ctx context.Context, tokenStr string) (bool, i
 	if err != nil {
 		return false, -1
 	}
-	if storedToken.ExpiredAt.Before(time.Now()) {
+	if storedToken.ExpiredAt.Before(time.Now().UTC()) {
 		log.Warn("token is expired")
 		return false, -1
 	}

@@ -2,8 +2,8 @@ create table if not exists digest (
     id int primary key generated always as identity,
     user_id int not null unique references "user"(id) on delete cascade,
     block_id int not null unique references block(id) on delete cascade,
-    created_at timestamp not null default now(),
-    updated_at timestamp default null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz default null,
 
     constraint update_at_not_in_past check ( updated_at is null or updated_at >= created_at )
 );

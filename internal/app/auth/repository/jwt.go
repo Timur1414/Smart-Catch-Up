@@ -73,7 +73,7 @@ func (obj *RefreshTokenRedis) GetByUser(ctx context.Context, userId int) (domain
 		log.Warn("Failed to get jwt", zap.Error(err))
 		return domain.RefreshToken{}, err
 	}
-	expiredAt := time.Now().Add(ttl)
+	expiredAt := time.Now().Add(ttl).UTC()
 	log.Info("Get jwt", zap.String("uuid", uuid), zap.Duration("duration", duration))
 	return domain.RefreshToken{
 		Uuid:      uuid,

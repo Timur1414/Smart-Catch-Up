@@ -29,8 +29,8 @@ func NewNotificationPostgres(db *pgxpool.Pool) *NotificationPostgres {
 
 func (obj *NotificationPostgres) Create(ctx context.Context, notification domain.Notification) (int, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `insert into notification(notification_type, recipient_id, actor_id, actor_name, payload) values ($1, $2, $3, $4, $5) returning id;`
-	args := []any{notification.NotificationType, notification.RecipientId, notification.ActorId, notification.ActorName, notification.Payload}
+	query := `insert into notification(notification_type, recipient_id, actor_id, actor_name, created_at, payload) values ($1, $2, $3, $4, $5, $6) returning id;`
+	args := []any{notification.NotificationType, notification.RecipientId, notification.ActorId, notification.ActorName, notification.CreatedAt, notification.Payload}
 	var id int
 	start := time.Now()
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&id)
@@ -59,12 +59,12 @@ func (obj *NotificationPostgres) Create(ctx context.Context, notification domain
 func (obj *NotificationPostgres) BulkCreate(ctx context.Context, notifications []domain.Notification) error {
 	log := logger.GetLoggerWithRequestId(ctx)
 	rows := pgx.CopyFromSlice(len(notifications), func(i int) ([]any, error) {
-		return []any{notifications[i].NotificationType, notifications[i].RecipientId, notifications[i].ActorId, notifications[i].ActorName, notifications[i].Payload}, nil
+		return []any{notifications[i].NotificationType, notifications[i].RecipientId, notifications[i].ActorId, notifications[i].ActorName, notifications[i].CreatedAt, notifications[i].Payload}, nil
 	})
 	_, err := obj.db.CopyFrom(
 		ctx,
 		pgx.Identifier{"notification"},
-		[]string{"notification_type", "recipient_id", "actor_id", "actor_name", "payload"},
+		[]string{"notification_type", "recipient_id", "actor_id", "actor_name", "created_at", "payload"},
 		rows,
 	)
 	if err != nil {

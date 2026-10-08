@@ -4,7 +4,7 @@ create table if not exists settings (
     avatar_url text not null default 'avatar/default.png',
     first_name text,
     last_name text,
-    updated_at timestamp default null
+    updated_at timestamptz default null
 );
 
 create trigger update_timestamp

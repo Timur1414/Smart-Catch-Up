@@ -7,8 +7,8 @@ create table if not exists notification (
     actor_name text not null,
     object_id int not null default 0,
     object_type text not null default '',
-    created_at timestamp not null default now(),
-    read_at timestamp default null,
+    created_at timestamptz not null default now(),
+    read_at timestamptz default null,
     payload text not null,
 
     constraint read_at_not_in_past check ( read_at is null or read_at >= created_at )
