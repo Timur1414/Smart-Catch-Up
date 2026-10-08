@@ -24,7 +24,7 @@ type UserRepository interface {
 type SettingsRepository interface {
 	GetById(ctx context.Context, id int) (domain.Settings, error)
 	GetByUser(ctx context.Context, user domain.User) (domain.Settings, error)
-	Update(ctx context.Context, user domain.Settings) error
+	Update(ctx context.Context, settings domain.Settings) error
 	UpdateAvatar(ctx context.Context, id int, avatarUrl string) error
 }
 
@@ -219,9 +219,20 @@ func (obj *SettingsPostgres) GetByUser(ctx context.Context, user domain.User) (d
 	return res, nil
 }
 
-func (obj *SettingsPostgres) Update(ctx context.Context, user domain.Settings) error {
-	//TODO implement me
-	panic("implement me")
+func (obj *SettingsPostgres) Update(ctx context.Context, settings domain.Settings) error {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `update settings set first_name = $1, last_name = $2 where id = $3;`
+	args := []any{settings.FirstName, settings.LastName, settings.Id}
+	start := time.Now()
+	_, err := obj.db.Exec(ctx, query, args...)
+	if err != nil {
+		log.Warn("failed to update settings", zap.Int("id", settings.Id), zap.Error(err))
+		return err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return nil
 }
 
 func (obj *SettingsPostgres) UpdateAvatar(ctx context.Context, id int, avatarUrl string) error {

@@ -48,8 +48,7 @@ func (obj *User) GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.
 }
 
 func (obj *User) Update(ctx context.Context, user domain.User) error {
-	//TODO implement me
-	panic("implement me")
+	return obj.repository.Update(ctx, user)
 }
 
 type Settings struct {
@@ -69,8 +68,7 @@ func (obj *Settings) GetByUser(ctx context.Context, user domain.User) (domain.Se
 }
 
 func (obj *Settings) Update(ctx context.Context, settings domain.Settings) error {
-	//TODO implement me
-	panic("implement me")
+	return obj.repository.Update(ctx, settings)
 }
 
 func (obj *Settings) UpdateAvatar(ctx context.Context, avatarUrl string) error {
