@@ -17,18 +17,7 @@ func GenerateNotification(notificationType string, text string, recipientId int,
 	objectId := gofakeit.Number(100, 10000)
 	payload := text
 	if payload == "" {
-		switch notificationType {
-		case "comment_on_post", "reply_to_comment":
-			payload = fmt.Sprintf("оставил комментарий: «%s»", gofakeit.Sentence(gofakeit.Number(4, 10)))
-		case "like", "reaction_on_post":
-			payload = "поставил отметку «Нравится» вашей публикации"
-		case "order_status_changed":
-			payload = fmt.Sprintf("Статус заказа #%d: «%s»", objectId, gofakeit.Word())
-		case "money_transfer":
-			payload = fmt.Sprintf("Перевод на сумму %.0f ₽ получен", gofakeit.Price(100, 5000))
-		default:
-			payload = gofakeit.Sentence(6)
-		}
+		payload = GeneratePayloadByType(notificationType, objectId)
 	}
 
 	return domain.Notification{
@@ -128,6 +117,7 @@ var payloadStrategies = map[string]PayloadGenerator{
 func GeneratePayloadByType(notificationType string, objectId int) string {
 	category := resolveCategory(notificationType)
 	generator, exists := payloadStrategies[category]
+	// TODO ? Try https://github.com/LibreTranslate/LibreTranslate to translate gofakeit
 	if !exists {
 		return gofakeit.Sentence(6)
 	}

@@ -14,7 +14,7 @@ import (
 
 type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
-	GetActors(ctx context.Context, curUserId int) ([]domain.NotificationActor, error)
+	GetActors(ctx context.Context, excludeUserIds []int) ([]domain.NotificationActor, error)
 }
 
 type UserPostgres struct {
@@ -45,10 +45,10 @@ func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, erro
 	return res, nil
 }
 
-func (obj *UserPostgres) GetActors(ctx context.Context, curUserId int) ([]domain.NotificationActor, error) {
+func (obj *UserPostgres) GetActors(ctx context.Context, excludeUserIds []int) ([]domain.NotificationActor, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select "user".id, first_name, last_name from "user" join settings on "user".id = settings.user_id where "user".id <> $1;`
-	args := []any{curUserId}
+	query := `select "user".id, first_name, last_name from "user" join settings on "user".id = settings.user_id where not ("user".id = any($1));`
+	args := []any{excludeUserIds}
 	res := make([]domain.NotificationActor, 0)
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
