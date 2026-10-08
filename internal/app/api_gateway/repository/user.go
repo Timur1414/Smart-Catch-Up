@@ -148,8 +148,19 @@ func (obj *UserPostgres) GetAllShortUsers(ctx context.Context) ([]domain.User, [
 }
 
 func (obj *UserPostgres) Update(ctx context.Context, user domain.User) error {
-	//TODO implement me
-	panic("implement me")
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `update "user" set email = $1 where id = $2 and active = true;`
+	args := []any{user.Email, user.Id}
+	start := time.Now()
+	_, err := obj.db.Exec(ctx, query, args...)
+	if err != nil {
+		log.Warn("failed to update user", zap.Int("userId", user.Id), zap.Error(err))
+		return err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return nil
 }
 
 type SettingsPostgres struct {

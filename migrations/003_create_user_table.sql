@@ -9,7 +9,7 @@ create table if not exists "user" (
 
     constraint password_length check ( length(password) >= 8 ),
     constraint email_is_correct check ( email ~* '^[A-Za-zа-яёА-ЯЁ0-9._%+-]+@[A-Za-zа-яёА-ЯЁ0-9.-]+\.[A-Za-zа-яёА-ЯЁ]{2,}$' ),
-    constraint update_at_not_in_past check ( updated_at >= created_at )
+    constraint update_at_not_in_past check ( updated_at is null or updated_at >= created_at )
 );
 
 create trigger update_timestamp

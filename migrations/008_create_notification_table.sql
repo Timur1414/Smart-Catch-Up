@@ -11,7 +11,7 @@ create table if not exists notification (
     read_at timestamp default null,
     payload text not null,
 
-    constraint read_at_not_in_past check ( read_at >= created_at )
+    constraint read_at_not_in_past check ( read_at is null or read_at >= created_at )
 );
 
 create index if not exists idx_notification_cluster on notification(cluster);

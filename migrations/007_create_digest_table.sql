@@ -3,9 +3,9 @@ create table if not exists digest (
     user_id int not null unique references "user"(id) on delete cascade,
     block_id int not null unique references block(id) on delete cascade,
     created_at timestamp not null default now(),
-    updated_at timestamp,
+    updated_at timestamp default null,
 
-    constraint update_at_not_in_past check ( updated_at >= created_at )
+    constraint update_at_not_in_past check ( updated_at is null or updated_at >= created_at )
 );
 
 create trigger update_timestamp

@@ -45,6 +45,8 @@ func (obj *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 func (obj *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Update profile request")
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
+	userId := context_helper.GetUserIdFromContext(r.Context())
 }
 
 func (obj *UserHandler) UpdateProfileAvatar(w http.ResponseWriter, r *http.Request) {
