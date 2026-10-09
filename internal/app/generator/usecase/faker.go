@@ -621,7 +621,8 @@ func GenerateActions(notificationType string) []domain.NotificationAction {
 		"story_question", "new_post", "new_photo", "new_story", "new_video", "new_clip", "new_audio", "new_album",
 		"new_podcast", "new_playlist", "stream_started", "new_author_content", "new_community_content",
 		"community_invitation", "suggested_post", "community_comment", "product_comment", "people_recommendation",
-		"communities_recommendation", "publications_recommendation",
+		"communities_recommendation", "publications_recommendation", "author_mention", "user_mention", "post_mention",
+		"comment_mention", "story_mention", "discussion_mention",
 	}
 	if !slices.Contains(typesWithActions, notificationType) {
 		return []domain.NotificationAction{}
@@ -640,31 +641,24 @@ func GenerateActions(notificationType string) []domain.NotificationAction {
 
 func GenerateAction(notificationType string) (string, string) {
 	if notificationType == "friend_request" || strings.Contains(notificationType, "_invitation") {
-		return "accept", "Принять"
+		return "click", "Принять"
 	}
-	if strings.Contains(notificationType, "acquaintance") {
+	if strings.Contains(notificationType, "acquaintance") || notificationType == "suggested_post" ||
+		strings.Contains(notificationType, "_recommendation") || strings.Contains(notificationType, "new_") ||
+		notificationType == "stream_started" {
 		return "click", "Посмотреть"
 	}
 	if notificationType == "friend_birthday" {
-		return "gift", "Отправить подарок"
+		return "click", "Отправить подарок"
 	}
 	if strings.Contains(notificationType, "comment") {
-		return "like", "Поставить лайк"
+		return "click", "Поставить лайк"
 	}
 	if notificationType == "story_question" {
-		return "answer", "Ответить"
+		return "click", "Ответить"
 	}
-	if strings.Contains(notificationType, "new_") {
-		return "click", "Посмотреть"
-	}
-	if notificationType == "stream_started" {
-		return "click", "Посмотреть"
-	}
-	if strings.Contains(notificationType, "_recommendation") {
-		return "click", "Посмотреть"
-	}
-	if notificationType == "suggested_post" {
-		return "click", "Посмотреть"
+	if strings.Contains(notificationType, "_mention") {
+		return "text", ""
 	}
 	return "click", "Посмотреть"
 }
