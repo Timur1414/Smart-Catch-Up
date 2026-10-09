@@ -84,7 +84,7 @@ func GenerateNotification(notificationType string, text string, recipientId int,
 		CreatedAt:        createdAt,
 		ReadAt:           time.Time{},
 		Payload:          payload,
-		Actions:          nil,
+		Actions:          GenerateActions(notificationType),
 	}
 }
 
@@ -612,4 +612,59 @@ var russianComments = []string{
 
 func generateComment() string {
 	return pickRandom(russianComments)
+}
+
+func GenerateActions(notificationType string) []domain.NotificationAction {
+	typesWithActions := []string{
+		"friend_request", "friend_invitation", "found_acquaintance", "recommended_acquaintance", "friend_birthday",
+		"comment_on_post", "comment_on_photo", "comment_on_video", "comment_on_article", "comment_on_product",
+		"story_question", "new_post", "new_photo", "new_story", "new_video", "new_clip", "new_audio", "new_album",
+		"new_podcast", "new_playlist", "stream_started", "new_author_content", "new_community_content",
+		"community_invitation", "suggested_post", "community_comment", "product_comment", "people_recommendation",
+		"communities_recommendation", "publications_recommendation",
+	}
+	if !slices.Contains(typesWithActions, notificationType) {
+		return []domain.NotificationAction{}
+	}
+	n := rand.Intn(2)
+	actions := make([]domain.NotificationAction, n)
+	for i := 0; i < n; i++ {
+		actionType, actionTarget := GenerateAction(notificationType)
+		actions[i] = domain.NotificationAction{
+			ActionType:   actionType,
+			ActionTarget: actionTarget,
+		}
+	}
+	return actions
+}
+
+func GenerateAction(notificationType string) (string, string) {
+	if notificationType == "friend_request" || strings.Contains(notificationType, "_invitation") {
+		return "accept", "Принять"
+	}
+	if strings.Contains(notificationType, "acquaintance") {
+		return "click", "Посмотреть"
+	}
+	if notificationType == "friend_birthday" {
+		return "gift", "Отправить подарок"
+	}
+	if strings.Contains(notificationType, "comment") {
+		return "like", "Поставить лайк"
+	}
+	if notificationType == "story_question" {
+		return "answer", "Ответить"
+	}
+	if strings.Contains(notificationType, "new_") {
+		return "click", "Посмотреть"
+	}
+	if notificationType == "stream_started" {
+		return "click", "Посмотреть"
+	}
+	if strings.Contains(notificationType, "_recommendation") {
+		return "click", "Посмотреть"
+	}
+	if notificationType == "suggested_post" {
+		return "click", "Посмотреть"
+	}
+	return "click", "Посмотреть"
 }
