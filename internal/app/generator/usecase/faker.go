@@ -626,7 +626,7 @@ func GenerateActions(notificationType string) []domain.NotificationAction {
 	if !slices.Contains(typesWithActions, notificationType) {
 		return []domain.NotificationAction{}
 	}
-	n := rand.Intn(2)
+	n := 1
 	actions := make([]domain.NotificationAction, n)
 	for i := 0; i < n; i++ {
 		actionType, actionTarget := GenerateAction(notificationType)

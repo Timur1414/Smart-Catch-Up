@@ -34,7 +34,7 @@ func (obj *NotificationPostgres) Create(ctx context.Context, notification domain
 		query := `insert into notification(notification_type, recipient_id, actor_id, actor_name, created_at, payload) values ($1, $2, $3, $4, $5, $6) returning id;`
 		args := []any{notification.NotificationType, notification.RecipientId, notification.ActorId, notification.ActorName, notification.CreatedAt, notification.Payload}
 		start := time.Now()
-		err := obj.db.QueryRow(ctx, query, args...).Scan(&id)
+		err := tx.QueryRow(ctx, query, args...).Scan(&id)
 		pgErr, ok := errors.AsType[*pgconn.PgError](err)
 		if ok {
 			log.Error("failed to create notification (db error)", zap.Error(pgErr))
@@ -55,7 +55,7 @@ func (obj *NotificationPostgres) Create(ctx context.Context, notification domain
 		log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 		log.Info("Query executed")
 		for i := range notification.Actions {
-			err = obj.AddNotificationActions(ctx, id, notification.Actions[i])
+			err = AddNotificationActions(ctx, tx, id, notification.Actions[i])
 			if err != nil {
 				return err
 			}
@@ -83,9 +83,9 @@ func (obj *NotificationPostgres) BulkCreate(ctx context.Context, notifications [
 			payloads[i] = notification.Payload
 		}
 		query := `insert into notification(notification_type, recipient_id, actor_id, actor_name, created_at, payload) select * from unnest(
-$1::notification_type_enum[], $2::int[], $3::int[], $4::int[], $5::timestamptz[], $6::text[]
+$1::notification_type_enum[], $2::int[], $3::int[], $4::text[], $5::timestamptz[], $6::text[]
 ) returning id;`
-		args := []any{types, recipientIds, actorIds, actorNames, payloads}
+		args := []any{types, recipientIds, actorIds, actorNames, createdAts, payloads}
 		start := time.Now()
 		rows, err := tx.Query(ctx, query, args...)
 		if err != nil {
@@ -140,12 +140,12 @@ $1::notification_type_enum[], $2::int[], $3::int[], $4::int[], $5::timestamptz[]
 	return err
 }
 
-func (obj *NotificationPostgres) AddNotificationActions(ctx context.Context, notificationId int, action domain.NotificationAction) error {
+func AddNotificationActions(ctx context.Context, tx pgx.Tx, notificationId int, action domain.NotificationAction) error {
 	log := logger.GetLoggerWithRequestId(ctx)
 	query := `insert into notification_action(notification_id, action_type, action_target) values ($1, $2, $3);`
 	args := []any{notificationId, action.ActionType, action.ActionTarget}
 	start := time.Now()
-	_, err := obj.db.Exec(ctx, query, args...)
+	_, err := tx.Exec(ctx, query, args...)
 	if err != nil {
 		log.Error("failed to create notification action", zap.Error(err))
 		return err

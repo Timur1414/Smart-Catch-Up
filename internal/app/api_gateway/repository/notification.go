@@ -58,7 +58,10 @@ func (obj *NotificationPostgres) GetById(ctx context.Context, id int) (domain.No
 
 func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limit int) ([]domain.Notification, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, cluster, notification_type, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where recipient_id = $1 order by notification.created_at desc limit $2;`
+	query := `select
+    N.id, N.cluster, N.notification_type, N.actor_id, N.actor_name, N.object_id, N.object_type, N.created_at, N.read_at, N.payload,
+    NA.action_type, NA.action_target
+from notification N left join public.notification_action NA on N.id = NA.notification_id where recipient_id = $1 order by created_at desc limit $2;`
 	args := []any{userId, limit}
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
@@ -73,11 +76,14 @@ func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limi
 	defer rows.Close()
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	res := make([]domain.Notification, 0)
+	resMap := make(map[int]*domain.Notification)
 	for rows.Next() {
 		notification := domain.Notification{RecipientId: userId}
 		var cluster pgtype.Text
 		var readAt pgtype.Timestamp
-		err = rows.Scan(&notification.Id, &cluster, &notification.NotificationType, &notification.ActorId, &notification.ActorName, &notification.ObjectId, &notification.ObjectType, &notification.CreatedAt, &readAt, &notification.Payload)
+		var actionType *string
+		var actionTarget *string
+		err = rows.Scan(&notification.Id, &cluster, &notification.NotificationType, &notification.ActorId, &notification.ActorName, &notification.ObjectId, &notification.ObjectType, &notification.CreatedAt, &readAt, &notification.Payload, &actionType, &actionTarget)
 		if err != nil {
 			log.Error("failed to scan notification", zap.Error(err))
 			return []domain.Notification{}, err
@@ -88,7 +94,19 @@ func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limi
 		if readAt.Valid {
 			notification.ReadAt = readAt.Time
 		}
-		res = append(res, notification)
+		foundNotification, exists := resMap[notification.Id]
+		if !exists {
+			res = append(res, notification)
+			foundNotification = &res[len(res)-1]
+			resMap[notification.Id] = &notification
+		}
+		if actionType != nil && actionTarget != nil {
+			action := domain.NotificationAction{
+				ActionType:   *actionType,
+				ActionTarget: *actionTarget,
+			}
+			foundNotification.Actions = append(foundNotification.Actions, action)
+		}
 	}
 	log.Info("Query executed")
 	return res, nil
@@ -96,7 +114,10 @@ func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limi
 
 func (obj *NotificationPostgres) GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, cluster, notification_type, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where recipient_id = $1 order by notification.created_at desc;`
+	query := `select
+    N.id, N.cluster, N.notification_type, N.actor_id, N.actor_name, N.object_id, N.object_type, N.created_at, N.read_at, N.payload,
+    NA.action_type, NA.action_target
+from notification N left join public.notification_action NA on N.id = NA.notification_id where recipient_id = $1 order by created_at desc;`
 	args := []any{userId}
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
