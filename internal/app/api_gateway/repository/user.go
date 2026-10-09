@@ -7,7 +7,9 @@ import (
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
@@ -155,6 +157,11 @@ func (obj *UserPostgres) Update(ctx context.Context, user domain.User) error {
 	_, err := obj.db.Exec(ctx, query, args...)
 	if err != nil {
 		log.Warn("failed to update user", zap.Int("userId", user.Id), zap.Error(err))
+		if pgErr, ok := errors.AsType[*pgconn.PgError](err); ok {
+			if pgErr.Code == pgerrcode.UniqueViolation {
+				return domain.ErrDuplicatedData
+			}
+		}
 		return err
 	}
 	duration := time.Since(start)

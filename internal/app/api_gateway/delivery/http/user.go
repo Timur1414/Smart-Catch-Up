@@ -2,12 +2,14 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/validators"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 	"go.uber.org/zap"
 )
@@ -71,11 +73,27 @@ func (obj *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
+	validationErrors := validators.ValidateUpdateProfile(request.Email, request.FirstName, request.LastName)
+	if len(validationErrors) > 0 {
+		response := web_helpers.NewValidationErrorResponse(requestId, validationErrors)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
 	user.Email = request.Email
 	settings.FirstName = request.FirstName
 	settings.LastName = request.LastName
 	err = obj.userUsecase.Update(r.Context(), user)
 	if err != nil {
+		if errors.Is(err, domain.ErrDuplicatedData) {
+			responseErrors := make([]web_helpers.ValidationError, 1)
+			responseErrors[0] = web_helpers.ValidationError{
+				Field:   "email",
+				Message: "already exists",
+			}
+			response := web_helpers.NewValidationErrorResponse(requestId, responseErrors)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
+			return
+		}
 		response := web_helpers.NewServerErrorResponse(requestId)
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
