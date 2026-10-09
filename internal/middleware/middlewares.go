@@ -94,7 +94,7 @@ func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handle
 		requestId := context_helper.GetRequestIdFromContext(r.Context())
 		cookie, err := apiDelivery.GetAccessCookie(r.Context(), r)
 		if err != nil {
-			log.Error("[auth middleware] failed to get access cookie", zap.Error(err))
+			log.Error("[auth middleware] failed to get access cookie", zap.String("path", path), zap.Error(err))
 			response := web_helpers2.NewUnauthorizedResponse(requestId)
 			web_helpers2.WriteResponseJSON(w, response.Code, response)
 			return
@@ -106,7 +106,7 @@ func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handle
 			return
 		}
 		ctx := context.WithValue(r.Context(), context_helper.ContextKeyUser, int(authResponse.GetUserId()))
-		log.Info("[auth middleware] auth success]", zap.Int64("user_id", authResponse.GetUserId()), zap.String("path", path))
+		log.Info("[auth middleware] auth success]", zap.String("path", path), zap.Int64("user_id", authResponse.GetUserId()), zap.String("path", path))
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

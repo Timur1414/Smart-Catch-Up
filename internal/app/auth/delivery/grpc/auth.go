@@ -60,6 +60,19 @@ func (obj *AuthServer) Login(ctx context.Context, request *authpb.LoginRequest) 
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
 	}
+	if user.TotpEnabled {
+		tempToken, err := obj.tokenUsecase.CreateTempToken(ctx, user.Id)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &authpb.LoginResponse{
+			UserId:       int64(user.Id),
+			AccessToken:  "",
+			RefreshToken: "",
+			MfaRequired:  true,
+			TempToken:    tempToken,
+		}, nil
+	}
 	accessToken, refreshToken, err := obj.tokenUsecase.CreatePair(ctx, user.Id)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid credentials")
@@ -118,5 +131,87 @@ func (obj *AuthServer) IsAuth(ctx context.Context, request *authpb.IsAuthRequest
 	return &authpb.IsAuthResponse{
 		IsAuth: true,
 		UserId: int64(userId),
+	}, nil
+}
+
+func (obj *AuthServer) Login2FA(ctx context.Context, request *authpb.Login2FARequest) (*authpb.Login2FAResponse, error) {
+	if request.GetTempToken() == "" || request.GetCode() == "" {
+		return nil, status.Error(codes.InvalidArgument, "code and temp token are required")
+	}
+	ok, userId := obj.tokenUsecase.CheckTempToken(ctx, request.GetTempToken())
+	if !ok {
+		return nil, status.Error(codes.Unauthenticated, "invalid temp token")
+	}
+	validCode, err := obj.userUsecase.Verify2FA(ctx, userId, request.GetCode())
+	if err != nil || !validCode {
+		attempts, err := obj.tokenUsecase.IncrementTempTokenAttempts(ctx, userId)
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, err.Error())
+		}
+		if attempts >= 3 {
+			err = obj.tokenUsecase.DeleteTempToken(ctx, request.GetTempToken())
+			return nil, status.Error(codes.ResourceExhausted, "too many failed attempts, please login again")
+		}
+		return nil, status.Error(codes.Unauthenticated, "invalid code")
+	}
+	err = obj.tokenUsecase.DeleteTempToken(ctx, request.GetTempToken())
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+	accessToken, refreshToken, err := obj.tokenUsecase.CreatePair(ctx, userId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to create token pair")
+	}
+	return &authpb.Login2FAResponse{
+		UserId:       int64(userId),
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
+}
+
+func (obj *AuthServer) Setup2FA(ctx context.Context, request *authpb.Setup2FARequest) (*authpb.Setup2FAResponse, error) {
+	if request.GetUserId() == 0 {
+		return nil, status.Error(codes.InvalidArgument, "user id is required")
+	}
+	secret, otpauthUrl, err := obj.userUsecase.Setup2FA(ctx, int(request.GetUserId()))
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &authpb.Setup2FAResponse{
+		Secret:     secret,
+		OtpauthUrl: otpauthUrl,
+	}, nil
+}
+
+func (obj *AuthServer) Enable2FA(ctx context.Context, request *authpb.Enable2FARequest) (*authpb.Enable2FAResponse, error) {
+	if request.GetUserId() == 0 || request.GetCode() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user id and code are required")
+	}
+	backupCodes, err := obj.userUsecase.Enable2FA(ctx, int(request.GetUserId()), request.GetCode())
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidTotpCode) {
+			return nil, status.Error(codes.InvalidArgument, "invalid confirmation code")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &authpb.Enable2FAResponse{
+		Success:     true,
+		BackupCodes: backupCodes,
+	}, nil
+}
+
+func (obj *AuthServer) Disable2FA(ctx context.Context, request *authpb.Disable2FARequest) (*authpb.Disable2FAResponse, error) {
+	if request.GetUserId() == 0 || request.GetCode() == "" {
+		return nil, status.Error(codes.InvalidArgument, "user id and code are required")
+	}
+	err := obj.userUsecase.Disable2FA(ctx, int(request.GetUserId()), request.GetCode())
+	if err != nil {
+		if errors.Is(err, domain.ErrInvalidTotpCode) {
+			return nil, status.Error(codes.InvalidArgument, "invalid confirmation code")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	return &authpb.Disable2FAResponse{
+		Success: true,
 	}, nil
 }

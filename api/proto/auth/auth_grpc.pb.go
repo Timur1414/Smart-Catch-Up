@@ -19,11 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	Auth_Register_FullMethodName = "/auth.Auth/Register"
-	Auth_Login_FullMethodName    = "/auth.Auth/Login"
-	Auth_Refresh_FullMethodName  = "/auth.Auth/Refresh"
-	Auth_Logout_FullMethodName   = "/auth.Auth/Logout"
-	Auth_IsAuth_FullMethodName   = "/auth.Auth/IsAuth"
+	Auth_Register_FullMethodName   = "/auth.Auth/Register"
+	Auth_Login_FullMethodName      = "/auth.Auth/Login"
+	Auth_Refresh_FullMethodName    = "/auth.Auth/Refresh"
+	Auth_Logout_FullMethodName     = "/auth.Auth/Logout"
+	Auth_IsAuth_FullMethodName     = "/auth.Auth/IsAuth"
+	Auth_Login2FA_FullMethodName   = "/auth.Auth/Login2FA"
+	Auth_Setup2FA_FullMethodName   = "/auth.Auth/Setup2FA"
+	Auth_Enable2FA_FullMethodName  = "/auth.Auth/Enable2FA"
+	Auth_Disable2FA_FullMethodName = "/auth.Auth/Disable2FA"
 )
 
 // AuthClient is the client API for Auth service.
@@ -35,6 +39,10 @@ type AuthClient interface {
 	Refresh(ctx context.Context, in *RefreshRequest, opts ...grpc.CallOption) (*RefreshResponse, error)
 	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
 	IsAuth(ctx context.Context, in *IsAuthRequest, opts ...grpc.CallOption) (*IsAuthResponse, error)
+	Login2FA(ctx context.Context, in *Login2FARequest, opts ...grpc.CallOption) (*Login2FAResponse, error)
+	Setup2FA(ctx context.Context, in *Setup2FARequest, opts ...grpc.CallOption) (*Setup2FAResponse, error)
+	Enable2FA(ctx context.Context, in *Enable2FARequest, opts ...grpc.CallOption) (*Enable2FAResponse, error)
+	Disable2FA(ctx context.Context, in *Disable2FARequest, opts ...grpc.CallOption) (*Disable2FAResponse, error)
 }
 
 type authClient struct {
@@ -90,6 +98,42 @@ func (c *authClient) IsAuth(ctx context.Context, in *IsAuthRequest, opts ...grpc
 	return out, nil
 }
 
+func (c *authClient) Login2FA(ctx context.Context, in *Login2FARequest, opts ...grpc.CallOption) (*Login2FAResponse, error) {
+	out := new(Login2FAResponse)
+	err := c.cc.Invoke(ctx, Auth_Login2FA_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) Setup2FA(ctx context.Context, in *Setup2FARequest, opts ...grpc.CallOption) (*Setup2FAResponse, error) {
+	out := new(Setup2FAResponse)
+	err := c.cc.Invoke(ctx, Auth_Setup2FA_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) Enable2FA(ctx context.Context, in *Enable2FARequest, opts ...grpc.CallOption) (*Enable2FAResponse, error) {
+	out := new(Enable2FAResponse)
+	err := c.cc.Invoke(ctx, Auth_Enable2FA_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *authClient) Disable2FA(ctx context.Context, in *Disable2FARequest, opts ...grpc.CallOption) (*Disable2FAResponse, error) {
+	out := new(Disable2FAResponse)
+	err := c.cc.Invoke(ctx, Auth_Disable2FA_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServer is the server API for Auth service.
 // All implementations must embed UnimplementedAuthServer
 // for forward compatibility
@@ -99,6 +143,10 @@ type AuthServer interface {
 	Refresh(context.Context, *RefreshRequest) (*RefreshResponse, error)
 	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
 	IsAuth(context.Context, *IsAuthRequest) (*IsAuthResponse, error)
+	Login2FA(context.Context, *Login2FARequest) (*Login2FAResponse, error)
+	Setup2FA(context.Context, *Setup2FARequest) (*Setup2FAResponse, error)
+	Enable2FA(context.Context, *Enable2FARequest) (*Enable2FAResponse, error)
+	Disable2FA(context.Context, *Disable2FARequest) (*Disable2FAResponse, error)
 	mustEmbedUnimplementedAuthServer()
 }
 
@@ -120,6 +168,18 @@ func (UnimplementedAuthServer) Logout(context.Context, *LogoutRequest) (*LogoutR
 }
 func (UnimplementedAuthServer) IsAuth(context.Context, *IsAuthRequest) (*IsAuthResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IsAuth not implemented")
+}
+func (UnimplementedAuthServer) Login2FA(context.Context, *Login2FARequest) (*Login2FAResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Login2FA not implemented")
+}
+func (UnimplementedAuthServer) Setup2FA(context.Context, *Setup2FARequest) (*Setup2FAResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Setup2FA not implemented")
+}
+func (UnimplementedAuthServer) Enable2FA(context.Context, *Enable2FARequest) (*Enable2FAResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Enable2FA not implemented")
+}
+func (UnimplementedAuthServer) Disable2FA(context.Context, *Disable2FARequest) (*Disable2FAResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Disable2FA not implemented")
 }
 func (UnimplementedAuthServer) mustEmbedUnimplementedAuthServer() {}
 
@@ -224,6 +284,78 @@ func _Auth_IsAuth_Handler(srv interface{}, ctx context.Context, dec func(interfa
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Auth_Login2FA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Login2FARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).Login2FA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_Login2FA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Login2FA(ctx, req.(*Login2FARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_Setup2FA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Setup2FARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).Setup2FA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_Setup2FA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Setup2FA(ctx, req.(*Setup2FARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_Enable2FA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Enable2FARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).Enable2FA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_Enable2FA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Enable2FA(ctx, req.(*Enable2FARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Auth_Disable2FA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Disable2FARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServer).Disable2FA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Auth_Disable2FA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServer).Disable2FA(ctx, req.(*Disable2FARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Auth_ServiceDesc is the grpc.ServiceDesc for Auth service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -250,6 +382,22 @@ var Auth_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IsAuth",
 			Handler:    _Auth_IsAuth_Handler,
+		},
+		{
+			MethodName: "Login2FA",
+			Handler:    _Auth_Login2FA_Handler,
+		},
+		{
+			MethodName: "Setup2FA",
+			Handler:    _Auth_Setup2FA_Handler,
+		},
+		{
+			MethodName: "Enable2FA",
+			Handler:    _Auth_Enable2FA_Handler,
+		},
+		{
+			MethodName: "Disable2FA",
+			Handler:    _Auth_Disable2FA_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

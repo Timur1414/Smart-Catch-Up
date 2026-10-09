@@ -20,6 +20,10 @@ type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	Update(ctx context.Context, user domain.User) error
+	SaveTotpSecret(ctx context.Context, userId int, secret string) error
+	EnableTotp(ctx context.Context, userId int, backupCodes []string) error
+	DisableTotp(ctx context.Context, userId int) error
+	RemoveBackupCode(ctx context.Context, userId int, code string) error
 }
 
 type UserPostgres struct {
@@ -86,12 +90,12 @@ func (obj *UserPostgres) Create(ctx context.Context, user domain.User) (int, err
 
 func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select is_staff, created_at, updated_at, email, password from "user" where id = $1 and active = true;`
+	query := `select is_staff, created_at, updated_at, email, password, totp_secret, totp_enabled, totp_backup_codes from "user" where id = $1 and active = true;`
 	args := []any{id}
 	res := domain.User{Id: id, Active: true}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.IsStaff, &res.CreatedAt, &updatedAt, &res.Email, &res.Password)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.IsStaff, &res.CreatedAt, &updatedAt, &res.Email, &res.Password, &res.TotpSecret, &res.TotpEnabled, &res.TotpBackupCodes)
 	if err != nil {
 		log.Error("failed to get user by id", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -110,12 +114,12 @@ func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, erro
 
 func (obj *UserPostgres) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, is_staff, created_at, updated_at, password from "user" where email = $1 and active = true;`
+	query := `select id, is_staff, created_at, updated_at, password, totp_secret, totp_enabled, totp_backup_codes from "user" where email = $1 and active = true;`
 	args := []any{email}
 	res := domain.User{Email: email, Active: true}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.IsStaff, &res.CreatedAt, &updatedAt, &res.Password)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.IsStaff, &res.CreatedAt, &updatedAt, &res.Password, &res.TotpSecret, &res.TotpEnabled, &res.TotpBackupCodes)
 	if err != nil {
 		log.Error("failed to get user by email", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -135,4 +139,68 @@ func (obj *UserPostgres) GetByEmail(ctx context.Context, email string) (domain.U
 func (obj *UserPostgres) Update(ctx context.Context, user domain.User) error {
 	//TODO implement me
 	panic("implement me")
+}
+
+func (obj *UserPostgres) SaveTotpSecret(ctx context.Context, userId int, secret string) error {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `update "user" set totp_secret = $1, totp_enabled = false where id = $2 and active = true;`
+	args := []any{secret, userId}
+	start := time.Now()
+	_, err := obj.db.Exec(ctx, query, args...)
+	if err != nil {
+		log.Error("failed to save TOTP secret", zap.Error(err))
+		return err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return nil
+}
+
+func (obj *UserPostgres) EnableTotp(ctx context.Context, userId int, backupCodes []string) error {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `update "user" set totp_enabled = true, totp_backup_codes = $1 where id = $2 and active = true;`
+	args := []any{backupCodes, userId}
+	start := time.Now()
+	_, err := obj.db.Exec(ctx, query, args...)
+	if err != nil {
+		log.Error("failed to enable TOTP", zap.Error(err))
+		return err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return nil
+}
+
+func (obj *UserPostgres) DisableTotp(ctx context.Context, userId int) error {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `update "user" set totp_enabled = false, totp_secret = '', totp_backup_codes = '{}' where id = $1 and active = true;`
+	args := []any{userId}
+	start := time.Now()
+	_, err := obj.db.Exec(ctx, query, args...)
+	if err != nil {
+		log.Error("failed to disable TOTP", zap.Error(err))
+		return err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return nil
+}
+
+func (obj *UserPostgres) RemoveBackupCode(ctx context.Context, userId int, code string) error {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `update "user" set totp_backup_codes = array_remove(totp_backup_codes, $1) where id = $2 and active = true;`
+	args := []any{code, userId}
+	start := time.Now()
+	_, err := obj.db.Exec(ctx, query, args...)
+	if err != nil {
+		log.Error("failed to remove backup code", zap.Error(err))
+		return err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return nil
 }

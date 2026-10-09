@@ -241,3 +241,43 @@ func NewAllowedNotificationTypesResponse(requestId string, types []string) Allow
 		Types:        types,
 	}
 }
+
+type LoginMFAResponse struct {
+	web_helpers.UuidResponse
+	MFARequired bool   `json:"mfa_required"`
+	TempToken   string `json:"temp_token"`
+}
+
+func NewLoginMFAResponse(requestId string, token string) LoginMFAResponse {
+	return LoginMFAResponse{
+		UuidResponse: web_helpers.NewUuidResponse(http.StatusOK, "2FA verification required", requestId),
+		MFARequired:  true,
+		TempToken:    token,
+	}
+}
+
+type Setup2FAResponse struct {
+	web_helpers.UuidResponse
+	Secret     string `json:"secret"`
+	OtpauthUrl string `json:"otpauth_url"`
+}
+
+func NewSetup2FAResponse(requestId string, secret string, otpauthUrl string) Setup2FAResponse {
+	return Setup2FAResponse{
+		UuidResponse: web_helpers.NewUuidResponse(http.StatusOK, "Ok", requestId),
+		Secret:       secret,
+		OtpauthUrl:   otpauthUrl,
+	}
+}
+
+type Enable2FAResponse struct {
+	web_helpers.UuidResponse
+	BackupCodes []string `json:"backup_codes"`
+}
+
+func NewEnable2FAResponse(requestId string, backupCodes []string) Enable2FAResponse {
+	return Enable2FAResponse{
+		UuidResponse: web_helpers.NewUuidResponse(http.StatusOK, "2FA successfully enabled", requestId),
+		BackupCodes:  backupCodes,
+	}
+}

@@ -74,9 +74,10 @@ func main() {
 
 	userRepo := repository.NewUserPostgres(dbPool)
 	jwtRepo := repository.NewRefreshTokenRedis(redisClient)
+	twoFactorRepo := repository.NewTwoFactorTokenRedis(redisClient)
 	log.Info("Repository initialized")
 	userUseCase := usecase.NewUser(userRepo)
-	jwtUseCase, err := usecase.NewJwt(jwtRepo, os.Getenv("JWT_SECRET"), os.Getenv("JWT_VERSION"))
+	jwtUseCase, err := usecase.NewJwt(jwtRepo, twoFactorRepo, os.Getenv("JWT_SECRET"), os.Getenv("JWT_VERSION"))
 	if err != nil {
 		log.Fatal("Failed to initialize jwt", zap.Error(err))
 	}
