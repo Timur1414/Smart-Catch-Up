@@ -132,11 +132,14 @@ from notification N left join public.notification_action NA on N.id = NA.notific
 	defer rows.Close()
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	res := make([]domain.Notification, 0)
+	resMap := make(map[int]*domain.Notification)
 	for rows.Next() {
 		notification := domain.Notification{RecipientId: userId}
 		var cluster pgtype.Text
 		var readAt pgtype.Timestamp
-		err = rows.Scan(&notification.Id, &cluster, &notification.NotificationType, &notification.ActorId, &notification.ActorName, &notification.ObjectId, &notification.ObjectType, &notification.CreatedAt, &readAt, &notification.Payload)
+		var actionType *string
+		var actionTarget *string
+		err = rows.Scan(&notification.Id, &cluster, &notification.NotificationType, &notification.ActorId, &notification.ActorName, &notification.ObjectId, &notification.ObjectType, &notification.CreatedAt, &readAt, &notification.Payload, &actionType, &actionTarget)
 		if err != nil {
 			log.Error("failed to scan notification", zap.Error(err))
 			return []domain.Notification{}, err
@@ -147,7 +150,19 @@ from notification N left join public.notification_action NA on N.id = NA.notific
 		if readAt.Valid {
 			notification.ReadAt = readAt.Time
 		}
-		res = append(res, notification)
+		foundNotification, exists := resMap[notification.Id]
+		if !exists {
+			res = append(res, notification)
+			foundNotification = &res[len(res)-1]
+			resMap[notification.Id] = &notification
+		}
+		if actionType != nil && actionTarget != nil {
+			action := domain.NotificationAction{
+				ActionType:   *actionType,
+				ActionTarget: *actionTarget,
+			}
+			foundNotification.Actions = append(foundNotification.Actions, action)
+		}
 	}
 	log.Info("Query executed")
 	return res, nil
