@@ -85,12 +85,9 @@ func (obj *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	err = obj.userUsecase.Update(r.Context(), user)
 	if err != nil {
 		if errors.Is(err, domain.ErrDuplicatedData) {
-			responseErrors := make([]web_helpers.ValidationError, 1)
-			responseErrors[0] = web_helpers.ValidationError{
-				Field:   "email",
-				Message: "already exists",
-			}
-			response := web_helpers.NewValidationErrorResponse(requestId, responseErrors)
+			response := web_helpers.NewValidationErrorResponse(requestId, []web_helpers.ValidationError{})
+			response.Code = http.StatusConflict
+			response.Message = err.Error()
 			web_helpers.WriteResponseJSON(w, response.Code, response)
 			return
 		}
