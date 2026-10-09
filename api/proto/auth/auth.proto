@@ -10,6 +10,10 @@ service Auth {
   rpc Refresh(RefreshRequest) returns (RefreshResponse);
   rpc Logout(LogoutRequest) returns (LogoutResponse);
   rpc IsAuth(IsAuthRequest) returns (IsAuthResponse);
+  rpc Login2FA(Login2FARequest) returns (Login2FAResponse);
+  rpc Setup2FA(Setup2FARequest) returns (Setup2FAResponse);
+  rpc Enable2FA(Enable2FARequest) returns (Enable2FAResponse);
+  rpc Disable2FA(Disable2FARequest) returns (Disable2FAResponse);
 }
 
 message RegisterRequest {
@@ -33,6 +37,8 @@ message LoginResponse {
   int64 user_id = 1;
   string access_token = 2;
   string refresh_token = 3;
+  bool mfa_required = 4;
+  string temp_token = 5;
 }
 
 message RefreshRequest {
@@ -62,4 +68,43 @@ message IsAuthRequest {
 message IsAuthResponse {
   bool is_auth = 1;
   int64 user_id = 2;
+}
+
+message Login2FARequest {
+  string temp_token = 1;
+  string code = 2;
+}
+
+message Login2FAResponse {
+  int64 user_id = 1;
+  string access_token = 2;
+  string refresh_token = 3;
+}
+
+message Setup2FARequest {
+  int64 user_id = 1;
+}
+
+message Setup2FAResponse {
+  string secret = 1;
+  string otpauth_url = 2;
+}
+
+message Enable2FARequest {
+  int64 user_id = 1;
+  string code = 2;
+}
+
+message Enable2FAResponse {
+  bool success = 1;
+  repeated string backup_codes = 2;
+}
+
+message Disable2FARequest {
+  int64 user_id = 1;
+  string code = 2;
+}
+
+message Disable2FAResponse {
+  bool success = 1;
 }

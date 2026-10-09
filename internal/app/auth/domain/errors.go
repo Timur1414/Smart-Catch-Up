@@ -4,12 +4,14 @@ import "errors"
 
 var (
 	ErrFailedToHashPassword = errors.New("failed to hash password")
+	ErrInvalidTotpCode      = errors.New("invalid TOTP code")
 )
 
 var (
 	ErrSecretTooShort    = errors.New("secret too short")
 	ErrVersionIsEmpty    = errors.New("version is empty")
 	ErrFailedToSignToken = errors.New("failed to sign token")
+	ErrInvalidTokenType  = errors.New("invalid token type")
 )
 
 var (

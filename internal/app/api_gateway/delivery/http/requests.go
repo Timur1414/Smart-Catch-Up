@@ -28,3 +28,15 @@ type UpdateProfileRequest struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 }
+
+type Login2FARequest struct {
+	TempToken string `json:"temp_token"`
+	Code      string `json:"code"`
+}
+
+type Enable2FARequest struct {
+	Code string `json:"code"`
+}
+type Disable2FARequest struct {
+	Code string `json:"code"`
+}
