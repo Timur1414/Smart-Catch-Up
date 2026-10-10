@@ -9,6 +9,7 @@ type NotificationAction struct {
 
 type Notification struct {
 	Id               int
+	Cluster          string
 	NotificationType string
 	RecipientId      int
 	ActorId          int
