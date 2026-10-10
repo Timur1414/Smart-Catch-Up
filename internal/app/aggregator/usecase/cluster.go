@@ -13,3 +13,11 @@ type ClusterUseCase interface {
 type Cluster struct {
 	repository repository.ClusterRepository
 }
+
+func NewCluster(repository repository.ClusterRepository) *Cluster {
+	return &Cluster{repository: repository}
+}
+
+func (obj *Cluster) GetAllClusters(ctx context.Context) ([]string, error) {
+	return obj.repository.GetAllClusters(ctx)
+}

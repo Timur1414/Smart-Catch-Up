@@ -85,6 +85,31 @@ func (obj *UserPostgres) Create(ctx context.Context, user domain.User) (int, err
 	}
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	log.Info("Query executed")
+
+	log = logger.GetLoggerWithRequestId(ctx)
+	query = `insert into digest(user_id) values ($1);`
+	args = []any{id, "", ""}
+	start = time.Now()
+	_, err = obj.db.Exec(ctx, query, args...)
+	duration = time.Since(start)
+	pgErr, ok = errors.AsType[*pgconn.PgError](err)
+	if ok {
+		log.Error("failed to create digest (db error)", zap.Error(pgErr))
+		switch pgErr.Code {
+		case pgerrcode.UniqueViolation:
+			return -1, domain.ErrDigestAlreadyExists
+		case pgerrcode.CheckViolation:
+			return -1, domain.ErrDuplicatedData
+		default:
+			return -1, pgErr
+		}
+	}
+	if err != nil {
+		log.Error("failed to create digest (not db error)", zap.Error(err))
+		return -1, err
+	}
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
 	return id, nil
 }
 

@@ -46,6 +46,20 @@ func addUser(conn *pgx.Conn, email string, plainPassword string, isStaff bool, f
 		panic(err)
 	}
 	fmt.Printf("Added settings\n")
+
+	query = `insert into digest(user_id) values ($1);`
+	_, err = conn.Exec(context.Background(), query, id)
+	if err != nil {
+		pgErr, ok := errors.AsType[*pgconn.PgError](err)
+		if ok {
+			if pgErr.Code == "23505" {
+				fmt.Printf("Digest already exists\n")
+				return
+			}
+		}
+		panic(err)
+	}
+	fmt.Printf("Added digest\n")
 }
 
 func addServiceUser(conn *pgx.Conn, login string, password string, role string) {
