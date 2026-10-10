@@ -23,15 +23,19 @@ type TwoFactorTokenRepository interface {
 	GetByUser(ctx context.Context, userId int) (domain.RefreshToken, error)
 	Delete(ctx context.Context, userId int) error
 	IncrementAttempts(ctx context.Context, userId int) (int, error)
+	GetUsed2FACode(ctx context.Context, userId int) (string, error)
+	AddUsed2FACode(ctx context.Context, userId int, code string) error
 }
 
 const (
 	refreshTokenPrefix           = "auth:refresh:"
 	AccessTokenExpirationTime    = time.Minute * 5
 	RefreshTokenExpirationTime   = time.Hour * 24 * 7
-	twoFactorSessionPrefix       = "auth:2fa:session:"
+	twoFactorFlowPrefix          = "auth:2fa:flow:"
 	twoFactorAttemptsPrefix      = "auth:2fa:attempts:"
 	TwoFactorTokenExpirationTime = time.Minute * 3
+	usedCodePrefix               = "auth:2fa:used_code:"
+	UsedCodeExpirationTime       = time.Second * 30
 )
 
 type RefreshTokenRedis struct {
@@ -118,7 +122,7 @@ func NewTwoFactorTokenRedis(client *redis.Client) *TwoFactorTokenRedis {
 func (obj *TwoFactorTokenRedis) Create(ctx context.Context, twoFactorToken domain.RefreshToken) error {
 	log := logger.GetLoggerWithRequestId(ctx)
 	startTime := time.Now()
-	key := twoFactorSessionPrefix + strconv.Itoa(twoFactorToken.UserId)
+	key := twoFactorFlowPrefix + strconv.Itoa(twoFactorToken.UserId)
 	err := obj.db.Set(ctx, key, twoFactorToken.Uuid, TwoFactorTokenExpirationTime).Err()
 	if err != nil {
 		log.Warn("Failed to create temp token", zap.Error(err))
@@ -133,7 +137,7 @@ func (obj *TwoFactorTokenRedis) GetByUser(ctx context.Context, userId int) (doma
 	log := logger.GetLoggerWithRequestId(ctx)
 	var tokenCmd *redis.StringCmd
 	var ttlCmd *redis.DurationCmd
-	key := twoFactorSessionPrefix + strconv.Itoa(userId)
+	key := twoFactorFlowPrefix + strconv.Itoa(userId)
 	startTime := time.Now()
 	_, err := obj.db.Pipelined(ctx, func(pipe redis.Pipeliner) error {
 		tokenCmd = pipe.Get(ctx, key)
@@ -170,7 +174,7 @@ func (obj *TwoFactorTokenRedis) GetByUser(ctx context.Context, userId int) (doma
 func (obj *TwoFactorTokenRedis) Delete(ctx context.Context, userId int) error {
 	log := logger.GetLoggerWithRequestId(ctx)
 	userIdStr := strconv.Itoa(userId)
-	tokenKey := twoFactorSessionPrefix + userIdStr
+	tokenKey := twoFactorFlowPrefix + userIdStr
 	attemptsKey := twoFactorAttemptsPrefix + userIdStr
 	startTime := time.Now()
 	err := obj.db.Del(ctx, tokenKey, attemptsKey).Err()
@@ -201,4 +205,14 @@ func (obj *TwoFactorTokenRedis) IncrementAttempts(ctx context.Context, userId in
 	duration := time.Since(startTime)
 	log.Info("Increment temp token", zap.String("uuid", key), zap.Duration("duration", duration), zap.Int64("attempts", attempts))
 	return int(attempts), err
+}
+
+func (obj *TwoFactorTokenRedis) GetUsed2FACode(ctx context.Context, userId int) (string, error) {
+	// ToDo implement
+	panic("implement me")
+}
+
+func (obj *TwoFactorTokenRedis) AddUsed2FACode(ctx context.Context, userId int, code string) error {
+	// ToDo implement
+	panic("implement me")
 }

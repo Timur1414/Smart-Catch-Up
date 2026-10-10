@@ -25,6 +25,8 @@ type JwtUseCase interface {
 	CheckTempToken(ctx context.Context, tokenStr string) (bool, int)
 	DeleteTempToken(ctx context.Context, tokenStr string) error
 	IncrementTempTokenAttempts(ctx context.Context, userId int) (int, error)
+	CheckUsed2FACodes(ctx context.Context, userId int, code string) (bool, error)
+	AddUsed2FACode(ctx context.Context, userId int, code string) error
 }
 
 const (
@@ -302,6 +304,17 @@ func (obj *Jwt) DeleteTempToken(ctx context.Context, tokenStr string) error {
 
 func (obj *Jwt) IncrementTempTokenAttempts(ctx context.Context, userId int) (int, error) {
 	return obj.tempTokenRepository.IncrementAttempts(ctx, userId)
+}
+
+func (obj *Jwt) CheckUsed2FACodes(ctx context.Context, userId int, code string) (bool, error) {
+	// TODO get 2FA code and find in redis: exists -> false
+	// ToDo implement
+	panic("implement me")
+}
+
+func (obj *Jwt) AddUsed2FACode(ctx context.Context, userId int, code string) error {
+	// ToDo implement
+	panic("implement me")
 }
 
 func (obj *Jwt) GetVersion() string {
