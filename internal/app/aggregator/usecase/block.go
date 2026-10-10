@@ -62,7 +62,7 @@ func (obj *Block) Aggregate(ctx context.Context) error {
 				if i == 0 || notification.CreatedAt.After(clusterEnd) {
 					clusterEnd = notification.CreatedAt
 				}
-				blockText = append(blockText, notification.Payload)
+				blockText = append(blockText, notification.ActorName+": "+notification.Payload)
 			}
 			if overAllStart.IsZero() || clusterStart.Before(overAllStart) {
 				overAllStart = clusterStart
