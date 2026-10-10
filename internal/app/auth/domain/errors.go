@@ -19,6 +19,7 @@ var (
 	ErrUserAlreadyExists     = errors.New("user already exists")
 	ErrDuplicatedData        = errors.New("duplicated data")
 	ErrSettingsAlreadyExists = errors.New("settings already exists")
+	ErrDigestAlreadyExists   = errors.New("digest already exists")
 
 	ErrNotFound = errors.New("not found")
 )

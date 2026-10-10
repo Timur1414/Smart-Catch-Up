@@ -116,13 +116,12 @@ func main() {
 	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
 	log.Info("UseCase initialized")
 	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase)
-	digestHandler := delivery.NewDigestHandler(digestUseCase)
+	digestHandler := delivery.NewDigestHandler(digestUseCase, blockUseCase)
 	adminHandler := delivery.NewAdminHandler(generatorClient, userUseCase, notificationUseCase)
 	authHandler := delivery.NewAuthHandler(authClient)
 	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
 	log.Info("Handler initialized")
 	_ = clusterUseCase
-	_ = blockUseCase
 	_ = blockPartUseCase
 
 	mux := http.NewServeMux()

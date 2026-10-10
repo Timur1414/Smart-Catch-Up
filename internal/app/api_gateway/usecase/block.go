@@ -36,13 +36,11 @@ func (obj Block) Create(ctx context.Context, block domain.Block) (int, error) {
 }
 
 func (obj Block) GetById(ctx context.Context, id int) (domain.Block, error) {
-	//TODO implement me
-	panic("implement me")
+	return obj.repository.GetById(ctx, id)
 }
 
 func (obj Block) GetByUser(ctx context.Context, user domain.User) (domain.Block, error) {
-	//TODO implement me
-	panic("implement me")
+	return obj.repository.GetByUser(ctx, user)
 }
 
 func (obj Block) Update(ctx context.Context, block domain.Block) error {

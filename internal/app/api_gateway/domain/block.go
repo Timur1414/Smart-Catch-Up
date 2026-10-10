@@ -5,9 +5,10 @@ import "time"
 type Block struct {
 	Id     int
 	UserId int
-	Active bool
+	Status string
 	Start  time.Time
 	End    time.Time
+	Parts  []BlockPart
 }
 
 type BlockPart struct {

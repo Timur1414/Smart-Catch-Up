@@ -75,6 +75,32 @@ services:
     networks:
       - scu-network
 
+  aggregator:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile_aggregator
+    container_name: aggregator
+    restart: always
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./log:/app/log
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - scu-network
+
   generator:
     build:
       context: .
@@ -84,6 +110,8 @@ services:
     depends_on:
       seed:
         condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -110,6 +138,8 @@ services:
     depends_on:
       seed:
         condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     read_only: true
@@ -145,6 +175,8 @@ services:
       auth:
         condition: service_started
       generator:
+        condition: service_started
+      aggregator:
         condition: service_started
     read_only: true
     security_opt:

@@ -28,13 +28,11 @@ func (obj *Digest) Create(ctx context.Context, digest domain.Digest) (int, error
 }
 
 func (obj *Digest) GetById(ctx context.Context, id int) (domain.Digest, error) {
-	//TODO implement me
-	panic("implement me")
+	return obj.repository.GetById(ctx, id)
 }
 
 func (obj *Digest) GetByUser(ctx context.Context, user domain.User) (domain.Digest, error) {
-	//TODO implement me
-	panic("implement me")
+	return obj.repository.GetByUser(ctx, user)
 }
 
 func (obj *Digest) Update(ctx context.Context, digest domain.Digest) error {
