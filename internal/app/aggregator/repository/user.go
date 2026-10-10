@@ -14,6 +14,7 @@ import (
 
 type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
+	GetAllActive(ctx context.Context) ([]domain.User, error)
 }
 
 type SettingsRepository interface {
@@ -41,6 +42,37 @@ func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, erro
 			return domain.User{}, domain.ErrNothingInTable
 		}
 		return domain.User{}, err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return res, nil
+}
+
+func (obj *UserPostgres) GetAllActive(ctx context.Context) ([]domain.User, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `select id, email from "user" where active = true;`
+	var args []any
+	res := make([]domain.User, 0)
+	start := time.Now()
+	rows, err := obj.db.Query(ctx, query, args...)
+	if err != nil {
+		log.Error("failed to get all users", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return []domain.User{}, domain.ErrNothingInTable
+		}
+		return []domain.User{}, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var email string
+		err = rows.Scan(&id, &email)
+		if err != nil {
+			log.Error("failed to scan user", zap.Error(err))
+			return []domain.User{}, err
+		}
+		res = append(res, domain.User{Id: id, Email: email, Active: true})
 	}
 	duration := time.Since(start)
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)

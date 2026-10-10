@@ -182,7 +182,6 @@ func (obj *NotificationPostgres) GetAllTypes(ctx context.Context) ([]string, err
 		}
 		return []string{}, err
 	}
-	duration := time.Since(start)
 	defer rows.Close()
 	for rows.Next() {
 		var notificationType string
@@ -193,6 +192,7 @@ func (obj *NotificationPostgres) GetAllTypes(ctx context.Context) ([]string, err
 		}
 		res = append(res, notificationType)
 	}
+	duration := time.Since(start)
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	log.Info("Query executed")
 	return res, nil
