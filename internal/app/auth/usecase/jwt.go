@@ -307,11 +307,7 @@ func (obj *Jwt) IncrementTempTokenAttempts(ctx context.Context, userId int) (int
 }
 
 func (obj *Jwt) Is2FACodeUsed(ctx context.Context, userId int, code string) (bool, error) {
-	storedCode, err := obj.tempTokenRepository.GetUsed2FACode(ctx, userId)
-	if err != nil {
-		return false, err
-	}
-	return storedCode == code, nil
+	return obj.tempTokenRepository.Is2FACodeUsed(ctx, userId, code)
 }
 
 func (obj *Jwt) AddUsed2FACode(ctx context.Context, userId int, code string) error {

@@ -23,7 +23,7 @@ type TwoFactorTokenRepository interface {
 	GetByUser(ctx context.Context, userId int) (domain.RefreshToken, error)
 	Delete(ctx context.Context, userId int) error
 	IncrementAttempts(ctx context.Context, userId int) (int, error)
-	GetUsed2FACode(ctx context.Context, userId int) (string, error)
+	Is2FACodeUsed(ctx context.Context, userId int, code string) (bool, error)
 	AddUsed2FACode(ctx context.Context, userId int, code string) error
 }
 
@@ -34,8 +34,8 @@ const (
 	twoFactorFlowPrefix          = "auth:2fa:flow:"
 	twoFactorAttemptsPrefix      = "auth:2fa:attempts:"
 	TwoFactorTokenExpirationTime = time.Minute * 3
-	usedCodePrefix               = "auth:2fa:used_code:"
-	UsedCodeExpirationTime       = time.Second * 30
+	usedCodePrefix               = "auth:2fa:used:"
+	UsedCodeExpirationTime       = time.Second * 90
 )
 
 type RefreshTokenRedis struct {
@@ -207,28 +207,25 @@ func (obj *TwoFactorTokenRedis) IncrementAttempts(ctx context.Context, userId in
 	return int(attempts), err
 }
 
-func (obj *TwoFactorTokenRedis) GetUsed2FACode(ctx context.Context, userId int) (string, error) {
+func (obj *TwoFactorTokenRedis) Is2FACodeUsed(ctx context.Context, userId int, code string) (bool, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	key := usedCodePrefix + strconv.Itoa(userId)
+	key := usedCodePrefix + strconv.Itoa(userId) + ":" + code
 	start := time.Now()
-	code, err := obj.db.Get(ctx, key).Result()
+	count, err := obj.db.Exists(ctx, key).Result()
 	if err != nil {
 		log.Error("failed to get used 2FA code", zap.Error(err))
-		if errors.Is(err, redis.Nil) {
-			return "", domain.ErrNotFound
-		}
-		return "", err
+		return false, err
 	}
 	duration := time.Since(start)
 	log.Info("Get used 2FA code ", zap.Int("userId", userId), zap.Duration("duration", duration))
-	return code, nil
+	return count > 0, nil
 }
 
 func (obj *TwoFactorTokenRedis) AddUsed2FACode(ctx context.Context, userId int, code string) error {
 	log := logger.GetLoggerWithRequestId(ctx)
-	key := usedCodePrefix + strconv.Itoa(userId)
+	key := usedCodePrefix + strconv.Itoa(userId) + ":" + code
 	start := time.Now()
-	err := obj.db.Set(ctx, key, code, UsedCodeExpirationTime).Err()
+	err := obj.db.Set(ctx, key, "1", UsedCodeExpirationTime).Err()
 	if err != nil {
 		log.Error("Failed to add used 2FA code", zap.Error(err))
 		return err
