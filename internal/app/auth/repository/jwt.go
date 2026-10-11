@@ -208,11 +208,32 @@ func (obj *TwoFactorTokenRedis) IncrementAttempts(ctx context.Context, userId in
 }
 
 func (obj *TwoFactorTokenRedis) GetUsed2FACode(ctx context.Context, userId int) (string, error) {
-	// ToDo implement
-	panic("implement me")
+	log := logger.GetLoggerWithRequestId(ctx)
+	key := usedCodePrefix + strconv.Itoa(userId)
+	start := time.Now()
+	code, err := obj.db.Get(ctx, key).Result()
+	if err != nil {
+		log.Error("failed to get used 2FA code", zap.Error(err))
+		if errors.Is(err, redis.Nil) {
+			return "", domain.ErrNotFound
+		}
+		return "", err
+	}
+	duration := time.Since(start)
+	log.Info("Get used 2FA code ", zap.Int("userId", userId), zap.Duration("duration", duration))
+	return code, nil
 }
 
 func (obj *TwoFactorTokenRedis) AddUsed2FACode(ctx context.Context, userId int, code string) error {
-	// ToDo implement
-	panic("implement me")
+	log := logger.GetLoggerWithRequestId(ctx)
+	key := usedCodePrefix + strconv.Itoa(userId)
+	start := time.Now()
+	err := obj.db.Set(ctx, key, code, UsedCodeExpirationTime).Err()
+	if err != nil {
+		log.Error("Failed to add used 2FA code", zap.Error(err))
+		return err
+	}
+	duration := time.Since(start)
+	log.Info("Set used 2FA code", zap.Int("userId", userId), zap.Duration("duration", duration))
+	return nil
 }

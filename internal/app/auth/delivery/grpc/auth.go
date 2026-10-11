@@ -154,6 +154,14 @@ func (obj *AuthServer) Login2FA(ctx context.Context, request *authpb.Login2FAReq
 		}
 		return nil, status.Error(codes.Unauthenticated, "invalid code")
 	}
+	used, err := obj.tokenUsecase.Is2FACodeUsed(ctx, userId, request.GetCode())
+	if err != nil || used {
+		return nil, status.Error(codes.Unauthenticated, "invalid code")
+	}
+	err = obj.tokenUsecase.AddUsed2FACode(ctx, userId, request.GetCode())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	err = obj.tokenUsecase.DeleteTempToken(ctx, request.GetTempToken())
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, err.Error())
