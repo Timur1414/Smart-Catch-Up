@@ -113,12 +113,12 @@ func (obj *User) Enable2FA(ctx context.Context, userId int, code string) ([]stri
 		log.Warn("invalid code", zap.Int("userId", userId))
 		return nil, domain.ErrInvalidTotpCode
 	}
-	backupCodes, err := generateBackupCodes(8)
+	backupCodes, hashedCodes, err := generateBackupCodes(8)
 	if err != nil {
 		log.Error("failed to generate backup codes", zap.Error(err))
 		return nil, err
 	}
-	err = obj.repository.EnableTotp(ctx, userId, backupCodes)
+	err = obj.repository.EnableTotp(ctx, userId, hashedCodes)
 	if err != nil {
 		return nil, err
 	}
@@ -139,8 +139,12 @@ func (obj *User) Verify2FA(ctx context.Context, userId int, code string) (bool, 
 	if totp.Validate(cleanCode, user.TotpSecret) {
 		return true, nil
 	}
+	if len(cleanCode) != 8 {
+		return false, domain.ErrInvalidTotpCode
+	}
 	for _, backupCode := range user.TotpBackupCodes {
-		if backupCode == cleanCode {
+		err = bcrypt.CompareHashAndPassword([]byte(backupCode), []byte(cleanCode))
+		if err == nil {
 			err = obj.repository.RemoveBackupCode(ctx, userId, backupCode)
 			if err != nil {
 				return false, err
@@ -176,14 +180,20 @@ func (obj *User) Disable2FA(ctx context.Context, userId int, code string) error 
 	return nil
 }
 
-func generateBackupCodes(count int) ([]string, error) {
+func generateBackupCodes(count int) ([]string, []string, error) {
 	codes := make([]string, count)
-	for i := 0; i < count; i++ {
+	hashedCodes := make([]string, count)
+	for i := range count {
 		bytes := make([]byte, 4)
 		if _, err := rand.Read(bytes); err != nil {
-			return nil, err
+			return []string{}, []string{}, err
 		}
 		codes[i] = hex.EncodeToString(bytes)
+		hashedCode, err := bcrypt.GenerateFromPassword([]byte(codes[i]), bcrypt.DefaultCost)
+		if err != nil {
+			return []string{}, []string{}, domain.ErrFailedToHashPassword
+		}
+		hashedCodes[i] = string(hashedCode)
 	}
-	return codes, nil
+	return codes, hashedCodes, nil
 }
