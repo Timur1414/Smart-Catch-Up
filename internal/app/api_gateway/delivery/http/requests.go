@@ -35,7 +35,8 @@ type Login2FARequest struct {
 }
 
 type Enable2FARequest struct {
-	Code string `json:"code"`
+	Code     string `json:"code"`
+	Password string `json:"password"`
 }
 type Disable2FARequest struct {
 	Code string `json:"code"`

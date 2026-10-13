@@ -22,7 +22,7 @@ type UserUseCase interface {
 	Update(ctx context.Context, user domain.User) error
 	IsExists(ctx context.Context, user domain.User) (domain.User, error)
 	Setup2FA(ctx context.Context, userId int) (string, string, error)
-	Enable2FA(ctx context.Context, userId int, code string) ([]string, error)
+	Enable2FA(ctx context.Context, userId int, code string, password string) ([]string, error)
 	Disable2FA(ctx context.Context, userId int, code string) error
 	Verify2FA(ctx context.Context, userId int, code string) (bool, error)
 }
@@ -112,7 +112,7 @@ func (obj *User) Setup2FA(ctx context.Context, userId int) (string, string, erro
 	return secret, otpauthUrl, nil
 }
 
-func (obj *User) Enable2FA(ctx context.Context, userId int, code string) ([]string, error) {
+func (obj *User) Enable2FA(ctx context.Context, userId int, code string, password string) ([]string, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
 	user, err := obj.repository.GetById(ctx, userId)
 	if err != nil {
@@ -121,6 +121,11 @@ func (obj *User) Enable2FA(ctx context.Context, userId int, code string) ([]stri
 	if user.TotpEnabled {
 		log.Error("TOTP is already enabled", zap.Int("userId", userId))
 		return []string{}, domain.ErrTotpAlreadyExists
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		log.Warn("failed to compare password", zap.Error(err))
+		return []string{}, err
 	}
 	if user.TotpSecret == "" {
 		return nil, domain.ErrNotFound

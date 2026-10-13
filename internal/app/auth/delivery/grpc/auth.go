@@ -191,10 +191,10 @@ func (obj *AuthServer) Setup2FA(ctx context.Context, request *authpb.Setup2FAReq
 }
 
 func (obj *AuthServer) Enable2FA(ctx context.Context, request *authpb.Enable2FARequest) (*authpb.Enable2FAResponse, error) {
-	if request.GetUserId() == 0 || request.GetCode() == "" {
+	if request.GetUserId() == 0 || request.GetCode() == "" || request.GetPassword() == "" {
 		return nil, status.Error(codes.InvalidArgument, "user id and code are required")
 	}
-	backupCodes, err := obj.userUsecase.Enable2FA(ctx, int(request.GetUserId()), request.GetCode())
+	backupCodes, err := obj.userUsecase.Enable2FA(ctx, int(request.GetUserId()), request.GetCode(), request.GetPassword())
 	if err != nil {
 		if errors.Is(err, domain.ErrInvalidTotpCode) {
 			return nil, status.Error(codes.InvalidArgument, "invalid confirmation code")

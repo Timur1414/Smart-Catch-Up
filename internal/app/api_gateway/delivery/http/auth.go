@@ -235,8 +235,9 @@ func (obj *AuthHandler) Enable2FA(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	authResponse, err := obj.authServer.Enable2FA(r.Context(), &authpb.Enable2FARequest{
-		UserId: int64(userId),
-		Code:   request.Code,
+		UserId:   int64(userId),
+		Code:     request.Code,
+		Password: request.Password,
 	})
 	if err != nil || !authResponse.GetSuccess() {
 		response := web_helpers.NewUnauthorizedResponse(requestId)

@@ -93,6 +93,7 @@ message Setup2FAResponse {
 message Enable2FARequest {
   int64 user_id = 1;
   string code = 2;
+  string password = 3;
 }
 
 message Enable2FAResponse {
