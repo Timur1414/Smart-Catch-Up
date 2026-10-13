@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrFailedToHashPassword = errors.New("failed to hash password")
 	ErrInvalidTotpCode      = errors.New("invalid TOTP code")
+	ErrTotpAlreadyExists    = errors.New("TOTP already exists")
 )
 
 var (

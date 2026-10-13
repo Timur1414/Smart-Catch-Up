@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"strings"
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/domain"
@@ -154,13 +155,11 @@ func (obj *AuthServer) Login2FA(ctx context.Context, request *authpb.Login2FAReq
 		}
 		return nil, status.Error(codes.Unauthenticated, "invalid code")
 	}
-	used, err := obj.tokenUsecase.Is2FACodeUsed(ctx, userId, request.GetCode())
-	if err != nil || used {
-		return nil, status.Error(codes.Unauthenticated, "invalid code")
-	}
-	err = obj.tokenUsecase.AddUsed2FACode(ctx, userId, request.GetCode())
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+	if len(strings.TrimSpace(request.GetCode())) == 6 {
+		created, err := obj.tokenUsecase.Mark2FACodeUsed(ctx, userId, request.GetCode())
+		if err != nil || !created {
+			return nil, status.Error(codes.Unauthenticated, "invalid code")
+		}
 	}
 	err = obj.tokenUsecase.DeleteTempToken(ctx, request.GetTempToken())
 	if err != nil {

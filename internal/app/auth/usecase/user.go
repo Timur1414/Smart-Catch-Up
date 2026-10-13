@@ -8,6 +8,7 @@ import (
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/repository"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/crypto"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/pquerna/otp/totp"
 	"go.uber.org/zap"
@@ -28,10 +29,14 @@ type UserUseCase interface {
 
 type User struct {
 	repository repository.UserRepository
+	crypto     *crypto.Encryptor
 }
 
-func NewUser(repo repository.UserRepository) *User {
-	return &User{repository: repo}
+func NewUser(repo repository.UserRepository, crypto *crypto.Encryptor) *User {
+	return &User{
+		repository: repo,
+		crypto:     crypto,
+	}
 }
 
 func (obj *User) Create(ctx context.Context, user domain.User) (int, error) {
@@ -81,6 +86,10 @@ func (obj *User) Setup2FA(ctx context.Context, userId int) (string, string, erro
 	if err != nil {
 		return "", "", err
 	}
+	if user.TotpEnabled {
+		log.Error("TOTP is already enabled", zap.Int("userId", userId))
+		return "", "", domain.ErrTotpAlreadyExists
+	}
 	key, err := totp.Generate(totp.GenerateOpts{
 		Issuer:      "SmartCatchUp",
 		AccountName: user.Email,
@@ -91,7 +100,11 @@ func (obj *User) Setup2FA(ctx context.Context, userId int) (string, string, erro
 	}
 	secret := key.Secret()
 	otpauthUrl := key.URL()
-	err = obj.repository.SaveTotpSecret(ctx, userId, secret)
+	encryptedSecret, err := obj.crypto.Encrypt(secret)
+	if err != nil {
+		return "", "", err
+	}
+	err = obj.repository.SaveTotpSecret(ctx, userId, encryptedSecret)
 	if err != nil {
 		return "", "", err
 	}
@@ -105,11 +118,19 @@ func (obj *User) Enable2FA(ctx context.Context, userId int, code string) ([]stri
 	if err != nil {
 		return nil, err
 	}
+	if user.TotpEnabled {
+		log.Error("TOTP is already enabled", zap.Int("userId", userId))
+		return []string{}, domain.ErrTotpAlreadyExists
+	}
 	if user.TotpSecret == "" {
 		return nil, domain.ErrNotFound
 	}
 	cleanCode := strings.TrimSpace(code)
-	if !totp.Validate(cleanCode, user.TotpSecret) {
+	decryptedSecret, err := obj.crypto.Decrypt(user.TotpSecret)
+	if err != nil {
+		return []string{}, err
+	}
+	if !totp.Validate(cleanCode, decryptedSecret) {
 		log.Warn("invalid code", zap.Int("userId", userId))
 		return nil, domain.ErrInvalidTotpCode
 	}
@@ -136,7 +157,11 @@ func (obj *User) Verify2FA(ctx context.Context, userId int, code string) (bool, 
 		return false, domain.ErrInvalidTotpCode
 	}
 	cleanCode := strings.TrimSpace(code)
-	if totp.Validate(cleanCode, user.TotpSecret) {
+	decryptedSecret, err := obj.crypto.Decrypt(user.TotpSecret)
+	if err != nil {
+		return false, err
+	}
+	if totp.Validate(cleanCode, decryptedSecret) {
 		return true, nil
 	}
 	if len(cleanCode) != 8 {

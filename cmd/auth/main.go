@@ -12,6 +12,7 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/cache"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/crypto"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
@@ -76,7 +77,12 @@ func main() {
 	jwtRepo := repository.NewRefreshTokenRedis(redisClient)
 	twoFactorRepo := repository.NewTwoFactorTokenRedis(redisClient)
 	log.Info("Repository initialized")
-	userUseCase := usecase.NewUser(userRepo)
+	encryptor, err := crypto.NewEncryptor([]byte(os.Getenv("ENCRYPTOR_KEY")))
+	if err != nil {
+		log.Fatal("Failed to initialize encryptor", zap.Error(err))
+		return
+	}
+	userUseCase := usecase.NewUser(userRepo, encryptor)
 	jwtUseCase, err := usecase.NewJwt(jwtRepo, twoFactorRepo, os.Getenv("JWT_SECRET"), os.Getenv("JWT_VERSION"))
 	if err != nil {
 		log.Fatal("Failed to initialize jwt", zap.Error(err))

@@ -25,8 +25,7 @@ type JwtUseCase interface {
 	CheckTempToken(ctx context.Context, tokenStr string) (bool, int)
 	DeleteTempToken(ctx context.Context, tokenStr string) error
 	IncrementTempTokenAttempts(ctx context.Context, userId int) (int, error)
-	Is2FACodeUsed(ctx context.Context, userId int, code string) (bool, error)
-	AddUsed2FACode(ctx context.Context, userId int, code string) error
+	Mark2FACodeUsed(ctx context.Context, userId int, code string) (bool, error)
 }
 
 const (
@@ -306,12 +305,8 @@ func (obj *Jwt) IncrementTempTokenAttempts(ctx context.Context, userId int) (int
 	return obj.tempTokenRepository.IncrementAttempts(ctx, userId)
 }
 
-func (obj *Jwt) Is2FACodeUsed(ctx context.Context, userId int, code string) (bool, error) {
-	return obj.tempTokenRepository.Is2FACodeUsed(ctx, userId, code)
-}
-
-func (obj *Jwt) AddUsed2FACode(ctx context.Context, userId int, code string) error {
-	return obj.tempTokenRepository.AddUsed2FACode(ctx, userId, code)
+func (obj *Jwt) Mark2FACodeUsed(ctx context.Context, userId int, code string) (bool, error) {
+	return obj.tempTokenRepository.Mark2FACodeUsed(ctx, userId, code)
 }
 
 func (obj *Jwt) GetVersion() string {

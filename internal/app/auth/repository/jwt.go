@@ -23,8 +23,7 @@ type TwoFactorTokenRepository interface {
 	GetByUser(ctx context.Context, userId int) (domain.RefreshToken, error)
 	Delete(ctx context.Context, userId int) error
 	IncrementAttempts(ctx context.Context, userId int) (int, error)
-	Is2FACodeUsed(ctx context.Context, userId int, code string) (bool, error)
-	AddUsed2FACode(ctx context.Context, userId int, code string) error
+	Mark2FACodeUsed(ctx context.Context, userId int, code string) (bool, error)
 }
 
 const (
@@ -207,30 +206,16 @@ func (obj *TwoFactorTokenRedis) IncrementAttempts(ctx context.Context, userId in
 	return int(attempts), err
 }
 
-func (obj *TwoFactorTokenRedis) Is2FACodeUsed(ctx context.Context, userId int, code string) (bool, error) {
+func (obj *TwoFactorTokenRedis) Mark2FACodeUsed(ctx context.Context, userId int, code string) (bool, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
 	key := usedCodePrefix + strconv.Itoa(userId) + ":" + code
 	start := time.Now()
-	count, err := obj.db.Exists(ctx, key).Result()
+	created, err := obj.db.SetNX(ctx, key, "1", UsedCodeExpirationTime).Result()
 	if err != nil {
-		log.Error("failed to get used 2FA code", zap.Error(err))
+		log.Error("Failed to add used 2FA code", zap.Error(err))
 		return false, err
 	}
 	duration := time.Since(start)
-	log.Info("Get used 2FA code ", zap.Int("userId", userId), zap.Duration("duration", duration))
-	return count > 0, nil
-}
-
-func (obj *TwoFactorTokenRedis) AddUsed2FACode(ctx context.Context, userId int, code string) error {
-	log := logger.GetLoggerWithRequestId(ctx)
-	key := usedCodePrefix + strconv.Itoa(userId) + ":" + code
-	start := time.Now()
-	err := obj.db.Set(ctx, key, "1", UsedCodeExpirationTime).Err()
-	if err != nil {
-		log.Error("Failed to add used 2FA code", zap.Error(err))
-		return err
-	}
-	duration := time.Since(start)
 	log.Info("Set used 2FA code", zap.Int("userId", userId), zap.Duration("duration", duration))
-	return nil
+	return created, nil
 }
