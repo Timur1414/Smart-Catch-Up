@@ -5,14 +5,14 @@ package file_server;
 option go_package = "github.com/Timur1414/Smart-Catch-Up/api/proto/file_server;file_serverpb";
 
 service FileServer {
-  rpc UploadAvatar(UploadAvatarRequest) returns (UploadAvatarResponse);
+  rpc SaveFile(SaveFileRequest) returns (SaveFileResponse);
 }
 
-message UploadAvatarRequest {
+message SaveFileRequest {
   bytes data = 1;
   string extension = 2;
 }
 
-message UploadAvatarResponse {
+message SaveFileResponse {
   string filename = 1;
 }

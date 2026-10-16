@@ -19,14 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	FileServer_UploadAvatar_FullMethodName = "/file_server.FileServer/UploadAvatar"
+	FileServer_SaveFile_FullMethodName = "/file_server.FileServer/SaveFile"
 )
 
 // FileServerClient is the client API for FileServer service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FileServerClient interface {
-	UploadAvatar(ctx context.Context, in *UploadAvatarRequest, opts ...grpc.CallOption) (*UploadAvatarResponse, error)
+	SaveFile(ctx context.Context, in *SaveFileRequest, opts ...grpc.CallOption) (*SaveFileResponse, error)
 }
 
 type fileServerClient struct {
@@ -37,9 +37,9 @@ func NewFileServerClient(cc grpc.ClientConnInterface) FileServerClient {
 	return &fileServerClient{cc}
 }
 
-func (c *fileServerClient) UploadAvatar(ctx context.Context, in *UploadAvatarRequest, opts ...grpc.CallOption) (*UploadAvatarResponse, error) {
-	out := new(UploadAvatarResponse)
-	err := c.cc.Invoke(ctx, FileServer_UploadAvatar_FullMethodName, in, out, opts...)
+func (c *fileServerClient) SaveFile(ctx context.Context, in *SaveFileRequest, opts ...grpc.CallOption) (*SaveFileResponse, error) {
+	out := new(SaveFileResponse)
+	err := c.cc.Invoke(ctx, FileServer_SaveFile_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (c *fileServerClient) UploadAvatar(ctx context.Context, in *UploadAvatarReq
 // All implementations must embed UnimplementedFileServerServer
 // for forward compatibility
 type FileServerServer interface {
-	UploadAvatar(context.Context, *UploadAvatarRequest) (*UploadAvatarResponse, error)
+	SaveFile(context.Context, *SaveFileRequest) (*SaveFileResponse, error)
 	mustEmbedUnimplementedFileServerServer()
 }
 
@@ -58,8 +58,8 @@ type FileServerServer interface {
 type UnimplementedFileServerServer struct {
 }
 
-func (UnimplementedFileServerServer) UploadAvatar(context.Context, *UploadAvatarRequest) (*UploadAvatarResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UploadAvatar not implemented")
+func (UnimplementedFileServerServer) SaveFile(context.Context, *SaveFileRequest) (*SaveFileResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SaveFile not implemented")
 }
 func (UnimplementedFileServerServer) mustEmbedUnimplementedFileServerServer() {}
 
@@ -74,20 +74,20 @@ func RegisterFileServerServer(s grpc.ServiceRegistrar, srv FileServerServer) {
 	s.RegisterService(&FileServer_ServiceDesc, srv)
 }
 
-func _FileServer_UploadAvatar_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UploadAvatarRequest)
+func _FileServer_SaveFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveFileRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FileServerServer).UploadAvatar(ctx, in)
+		return srv.(FileServerServer).SaveFile(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FileServer_UploadAvatar_FullMethodName,
+		FullMethod: FileServer_SaveFile_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileServerServer).UploadAvatar(ctx, req.(*UploadAvatarRequest))
+		return srv.(FileServerServer).SaveFile(ctx, req.(*SaveFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -100,8 +100,8 @@ var FileServer_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*FileServerServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "UploadAvatar",
-			Handler:    _FileServer_UploadAvatar_Handler,
+			MethodName: "SaveFile",
+			Handler:    _FileServer_SaveFile_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
