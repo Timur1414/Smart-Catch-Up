@@ -75,6 +75,24 @@ services:
     networks:
       - scu-network
 
+  fileserver:
+    build:
+      context: .
+      dockerfile: deployments/docker/Dockerfile_fileserver
+    container_name: fileserver
+    restart: always
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    expose:
+      - "50053"
+    volumes:
+      - ./log:/app/log
+    env_file:
+      - .env
+    networks:
+      - scu-network
+
   aggregator:
     build:
       context: .
