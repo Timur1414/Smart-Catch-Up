@@ -19,7 +19,7 @@ type SettingsUseCase interface {
 	GetById(ctx context.Context, id int) (domain.Settings, error)
 	GetByUser(ctx context.Context, user domain.User) (domain.Settings, error)
 	Update(ctx context.Context, settings domain.Settings) error
-	UpdateAvatar(ctx context.Context, avatarUrl string) error
+	UpdateAvatar(ctx context.Context, id int, avatarUrl string) error
 }
 
 type User struct {
@@ -71,7 +71,6 @@ func (obj *Settings) Update(ctx context.Context, settings domain.Settings) error
 	return obj.repository.Update(ctx, settings)
 }
 
-func (obj *Settings) UpdateAvatar(ctx context.Context, avatarUrl string) error {
-	//TODO implement me
-	panic("implement me")
+func (obj *Settings) UpdateAvatar(ctx context.Context, id int, avatarUrl string) error {
+	return obj.repository.UpdateAvatar(ctx, id, avatarUrl)
 }

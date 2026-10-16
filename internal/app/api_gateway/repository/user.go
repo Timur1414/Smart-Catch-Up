@@ -243,6 +243,17 @@ func (obj *SettingsPostgres) Update(ctx context.Context, settings domain.Setting
 }
 
 func (obj *SettingsPostgres) UpdateAvatar(ctx context.Context, id int, avatarUrl string) error {
-	//TODO implement me
-	panic("implement me")
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `update settings set avatar_url = $1 where id = $2;`
+	args := []any{avatarUrl, id}
+	start := time.Now()
+	_, err := obj.db.Exec(ctx, query, args...)
+	if err != nil {
+		log.Warn("failed to update avatar", zap.Int("id", id), zap.Error(err))
+		return err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return nil
 }

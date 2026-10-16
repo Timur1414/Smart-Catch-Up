@@ -3,8 +3,11 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
+	"path/filepath"
 
+	fileserverpb "github.com/Timur1414/Smart-Catch-Up/api/proto/file_server"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
@@ -17,12 +20,16 @@ import (
 type UserHandler struct {
 	userUsecase     usecase.UserUseCase
 	settingsUsecase usecase.SettingsUseCase
+	fileserver      fileserverpb.FileServerClient
 }
 
-func NewUserHandler(userUsecase usecase.UserUseCase, settings usecase.SettingsUseCase) *UserHandler {
+const maxAvatarSize = 5 * 1024 * 1024
+
+func NewUserHandler(userUsecase usecase.UserUseCase, settings usecase.SettingsUseCase, fileserverClient fileserverpb.FileServerClient) *UserHandler {
 	return &UserHandler{
 		userUsecase:     userUsecase,
 		settingsUsecase: settings,
+		fileserver:      fileserverClient,
 	}
 }
 
@@ -108,6 +115,62 @@ func (obj *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 func (obj *UserHandler) UpdateProfileAvatar(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Update profile avatar")
+	requestId := context_helper.GetRequestIdFromContext(r.Context())
+	userId := context_helper.GetUserIdFromContext(r.Context())
+	r.Body = http.MaxBytesReader(w, r.Body, maxAvatarSize)
+	file, fileHeader, err := r.FormFile("avatar")
+	if err != nil {
+		log.Warn("Failed to read avatar from multipart form", zap.Error(err))
+		response := web_helpers.NewValidationErrorResponse(requestId, []web_helpers.ValidationError{
+			web_helpers.NewValidationError("avatar", "Файл аватара не найден или превышает допустимый размер (5 МБ)"),
+		})
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			log.Error("failed to close file", zap.Error(err))
+		}
+	}()
+	ext := filepath.Ext(fileHeader.Filename)
+	if ext == "" {
+		response := web_helpers.NewValidationErrorResponse(requestId, []web_helpers.ValidationError{
+			web_helpers.NewValidationError("avatar", "Файл должен иметь расширение (например, .jpg, .png)"),
+		})
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		log.Error("Failed to read file bytes", zap.Error(err))
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	settings, err := obj.settingsUsecase.GetByUser(r.Context(), domain.User{Id: userId})
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	fileserverResponse, err := obj.fileserver.SaveFile(r.Context(), &fileserverpb.SaveFileRequest{
+		Data:      fileBytes,
+		Extension: ext,
+	})
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	err = obj.settingsUsecase.UpdateAvatar(r.Context(), settings.Id, fileserverResponse.GetFilename())
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	response := web_helpers.NewOkResponse()
+	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *UserHandler) IsStaff(w http.ResponseWriter, r *http.Request) {

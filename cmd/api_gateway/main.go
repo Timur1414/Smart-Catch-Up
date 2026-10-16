@@ -9,6 +9,7 @@ import (
 	"time"
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
+	fileserverpb "github.com/Timur1414/Smart-Catch-Up/api/proto/file_server"
 	generatorpb "github.com/Timur1414/Smart-Catch-Up/api/proto/generator"
 	delivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
@@ -99,6 +100,19 @@ func main() {
 	}
 	generatorClient := generatorpb.NewGeneratorClient(generatorConn)
 
+	fileserverConn, err := grpc.NewClient(
+		"fileserver:50053",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			d := net.Dialer{Timeout: 10 * time.Second}
+			return d.DialContext(ctx, "tcp4", addr)
+		}),
+	)
+	if err != nil {
+		log.Fatal("Failed to connect to fileserver service", zap.Error(err))
+	}
+	fileserverClient := fileserverpb.NewFileServerClient(fileserverConn)
+
 	userRepo := repository.NewUserPostgres(dbPool)
 	settingsRepo := repository.NewSettingsPostgres(dbPool)
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
@@ -115,7 +129,7 @@ func main() {
 	blockUseCase := usecase.NewBlock(blockRepo)
 	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
 	log.Info("UseCase initialized")
-	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase)
+	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase, fileserverClient)
 	digestHandler := delivery.NewDigestHandler(digestUseCase, blockUseCase)
 	adminHandler := delivery.NewAdminHandler(generatorClient, userUseCase, notificationUseCase)
 	authHandler := delivery.NewAuthHandler(authClient)
