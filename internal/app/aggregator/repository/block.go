@@ -48,6 +48,12 @@ func (obj *BlockPostgres) Create(ctx context.Context, block domain.Block) (int, 
 				log.Error("failed to create block", zap.Error(err))
 				return err
 			}
+			updateNotificationsQuery := `update notification set cluster = $1 where id = any($2);`
+			_, err = tx.Exec(ctx, updateNotificationsQuery, part.ClusterType, part.NotificationIds)
+			if err != nil {
+				log.Error("failed to update notifications", zap.Error(err))
+				return err
+			}
 			duration = time.Since(start)
 			log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 			log.Info("Query executed")

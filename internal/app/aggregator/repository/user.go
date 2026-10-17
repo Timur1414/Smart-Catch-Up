@@ -15,6 +15,7 @@ import (
 type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	GetAllActive(ctx context.Context) ([]domain.User, error)
+	GetMaxId(ctx context.Context) (int, error)
 }
 
 type SettingsRepository interface {
@@ -73,6 +74,26 @@ func (obj *UserPostgres) GetAllActive(ctx context.Context) ([]domain.User, error
 			return []domain.User{}, err
 		}
 		res = append(res, domain.User{Id: id, Email: email, Active: true})
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return res, nil
+}
+
+func (obj *UserPostgres) GetMaxId(ctx context.Context) (int, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	query := `select coalesce(max(id), 0) from "user" where active = true;`
+	var args []any
+	res := 0
+	start := time.Now()
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res)
+	if err != nil {
+		log.Error("failed to get max id", zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, domain.ErrNothingInTable
+		}
+		return 0, err
 	}
 	duration := time.Since(start)
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)

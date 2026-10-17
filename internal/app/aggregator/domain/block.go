@@ -12,10 +12,11 @@ type Block struct {
 }
 
 type BlockPart struct {
-	Id          int
-	BlockId     int
-	ClusterType string
-	Text        string
-	Start       time.Time
-	End         time.Time
+	Id              int
+	BlockId         int
+	ClusterType     string
+	Text            string
+	Start           time.Time
+	End             time.Time
+	NotificationIds []int
 }

@@ -16,7 +16,11 @@ create table if not exists notification (
 
 create index if not exists idx_notification_cluster on notification(cluster);
 
+create index if not exists idx_notification_unclustered_range on notification(recipient_id, created_at) where cluster is null;
+
 ---- create above / drop below ----
+
+drop index if exists idx_notification_unclustered_range;
 
 drop index if exists idx_notification_cluster;
 

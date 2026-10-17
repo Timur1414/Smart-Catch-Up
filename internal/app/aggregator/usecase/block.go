@@ -12,7 +12,7 @@ import (
 )
 
 type BlockUseCase interface {
-	Aggregate(ctx context.Context) error
+	Aggregate(ctx context.Context, startUserID, endUserID int) error
 }
 
 type Block struct {
@@ -29,10 +29,10 @@ func NewBlock(repository repository.BlockRepository, notifRepo repository.Notifi
 	}
 }
 
-func (obj *Block) Aggregate(ctx context.Context) error {
+func (obj *Block) Aggregate(ctx context.Context, startUserID, endUserID int) error {
 	log := logger.GetLoggerWithRequestId(ctx)
 	log.Info("Start aggregation")
-	allNotifications, err := obj.notificationRepo.GetAll(ctx)
+	allNotifications, err := obj.notificationRepo.GetAllByUserRange(ctx, startUserID, endUserID)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,9 @@ func (obj *Block) Aggregate(ctx context.Context) error {
 		for cluster, clusterNotifications := range clusterGroups {
 			var clusterStart, clusterEnd time.Time
 			var blockText []string
+			notificationIds := make([]int, 0, len(clusterNotifications))
 			for i, notification := range clusterNotifications {
+				notificationIds = append(notificationIds, notification.Id)
 				if i == 0 || notification.CreatedAt.Before(clusterStart) {
 					clusterStart = notification.CreatedAt
 				}
@@ -71,10 +73,11 @@ func (obj *Block) Aggregate(ctx context.Context) error {
 				overAllEnd = clusterEnd
 			}
 			parts = append(parts, domain.BlockPart{
-				ClusterType: cluster,
-				Text:        strings.Join(blockText, "\n"),
-				Start:       clusterStart,
-				End:         clusterEnd,
+				ClusterType:     cluster,
+				Text:            strings.Join(blockText, "\n"),
+				Start:           clusterStart,
+				End:             clusterEnd,
+				NotificationIds: notificationIds,
 			})
 		}
 		if len(parts) == 0 {

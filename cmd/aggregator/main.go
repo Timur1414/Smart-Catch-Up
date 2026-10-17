@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/repository"
@@ -13,6 +14,52 @@ import (
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
+
+type RangeJob struct {
+	StartId int
+	EndId   int
+}
+
+func RunAggregation(ctx context.Context, blockUsecase usecase.BlockUseCase, maxUserId, batchSize, workerCount int) {
+	log := logger.GetLogger()
+	log.Info("Starting aggregation cycle", zap.Int("max_user_id", maxUserId))
+	jobs := make(chan RangeJob, workerCount*2)
+	var wg sync.WaitGroup
+	for i := 0; i < workerCount; i++ {
+		wg.Go(func() {
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case job, ok := <-jobs:
+					if !ok {
+						return
+					}
+					err := blockUsecase.Aggregate(ctx, job.StartId, job.EndId)
+					if err != nil {
+						log.Error("Worker failed to aggregate",
+							zap.Int("start_id", job.StartId),
+							zap.Int("end_id", job.EndId),
+							zap.Error(err))
+					}
+				}
+			}
+		})
+	}
+	for i := 0; i <= maxUserId; i += batchSize {
+		endId := i + batchSize
+		select {
+		case <-ctx.Done():
+			close(jobs)
+			wg.Wait()
+			return
+		case jobs <- RangeJob{StartId: i, EndId: endId}:
+		}
+	}
+	close(jobs)
+	wg.Wait()
+	log.Info("Aggregation cycle finished successfully")
+}
 
 func main() {
 	if _, err := os.Stat(".env"); err == nil {
@@ -57,31 +104,27 @@ func main() {
 	blockRepo := repository.NewBlockPostgres(dbPool)
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
 	digestRepo := repository.NewDigestPostgres(dbPool)
+	userRepo := repository.NewUserPostgres(dbPool)
 	log.Info("Repository initialized")
 	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo)
 	log.Info("Usecase initialized")
 
+	batchSize := 500
+	workerCount := 4
 	interval := time.Minute
-
 	aggregationCtx := context.Background()
-	err = blockUsecase.Aggregate(aggregationCtx)
-	if err != nil {
-		log.Error("Failed to aggregate", zap.Error(err))
-		return
-	}
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
-	log.Info("Ticker started")
+
 	for {
+		maxUserID, err := userRepo.GetMaxId(aggregationCtx)
+		if err != nil {
+			log.Error("Failed to get max user id", zap.Error(err))
+		}
+		RunAggregation(aggregationCtx, blockUsecase, maxUserID, batchSize, workerCount)
 		select {
 		case <-aggregationCtx.Done():
 			log.Info("Context cancelled, terminating aggregator service")
 			return
-		case <-ticker.C:
-			err = blockUsecase.Aggregate(aggregationCtx)
-			if err != nil {
-				log.Error("Failed to aggregate", zap.Error(err))
-			}
+		case <-time.After(interval):
 		}
 	}
 }

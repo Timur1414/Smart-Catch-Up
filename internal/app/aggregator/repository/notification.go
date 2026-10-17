@@ -12,7 +12,7 @@ import (
 )
 
 type NotificationRepository interface {
-	GetAll(ctx context.Context) ([]domain.Notification, error)
+	GetAllByUserRange(ctx context.Context, startUserID, endUserID int) ([]domain.Notification, error)
 	GetById(ctx context.Context, id int) (domain.Notification, error)
 	GetByUser(ctx context.Context, userId int) ([]domain.Notification, error)
 }
@@ -25,10 +25,10 @@ func NewNotificationPostgres(db *pgxpool.Pool) *NotificationPostgres {
 	return &NotificationPostgres{db: db}
 }
 
-func (obj *NotificationPostgres) GetAll(ctx context.Context) ([]domain.Notification, error) {
+func (obj *NotificationPostgres) GetAllByUserRange(ctx context.Context, startUserId, endUserId int) ([]domain.Notification, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, notification_type, recipient_id, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where cluster is null order by created_at;`
-	var args []any
+	query := `select id, notification_type, recipient_id, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where cluster is null and recipient_id >= $1 and recipient_id < $2 order by created_at;`
+	args := []any{startUserId, endUserId}
 	res := make([]domain.Notification, 0)
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
