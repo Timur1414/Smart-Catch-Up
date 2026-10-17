@@ -1,7 +1,7 @@
 create table if not exists settings (
     id int primary key generated always as identity,
     user_id int not null unique references "user"(id) on delete cascade,
-    avatar_url text not null default 'avatar/default.png',
+    avatar_url text not null default 'default.png',
     first_name text,
     last_name text,
     updated_at timestamptz default null
