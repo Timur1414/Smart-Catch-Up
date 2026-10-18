@@ -9,6 +9,7 @@ type User struct {
 type Settings struct {
 	Id        int
 	UserId    int
+	Important []string
 	AvatarUrl string
 	FirstName string
 	LastName  string

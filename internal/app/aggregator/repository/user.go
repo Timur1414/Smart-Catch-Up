@@ -20,6 +20,7 @@ type UserRepository interface {
 
 type SettingsRepository interface {
 	GetByUser(ctx context.Context, id int) (domain.Settings, error)
+	GetByUsers(ctx context.Context, ids []int) (map[int]domain.Settings, error)
 }
 
 type UserPostgres struct {
@@ -111,14 +112,47 @@ func NewSettingsPostgres(db *pgxpool.Pool) *SettingsPostgres {
 
 func (obj *SettingsPostgres) GetByUser(ctx context.Context, id int) (domain.Settings, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, avatar_url, first_name, last_name from settings where user_id = $1;`
+	query := `select id, avatar_url, first_name, last_name, important from settings where user_id = $1;`
 	args := []any{id}
 	res := domain.Settings{UserId: id}
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.AvatarUrl, &res.FirstName, &res.LastName)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.AvatarUrl, &res.FirstName, &res.LastName, &res.Important)
 	if err != nil {
-		log.Error("failed to get user by id", zap.Int("id", id), zap.Error(err))
+		log.Error("failed to get user settings by id", zap.Int("id", id), zap.Error(err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Settings{UserId: id, Important: []string{}}, nil
+		}
 		return domain.Settings{}, err
+	}
+	duration := time.Since(start)
+	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+	log.Info("Query executed")
+	return res, nil
+}
+
+func (obj *SettingsPostgres) GetByUsers(ctx context.Context, ids []int) (map[int]domain.Settings, error) {
+	log := logger.GetLoggerWithRequestId(ctx)
+	res := make(map[int]domain.Settings, len(ids))
+	if len(ids) == 0 {
+		return res, nil
+	}
+	query := `select user_id, id, avatar_url, first_name, last_name, important from settings where user_id = any($1);`
+	args := []any{ids}
+	start := time.Now()
+	rows, err := obj.db.Query(ctx, query, args...)
+	if err != nil {
+		log.Error("failed to get settings by users", zap.Error(err))
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var s domain.Settings
+		err := rows.Scan(&s.UserId, &s.Id, &s.AvatarUrl, &s.FirstName, &s.LastName, &s.Important)
+		if err != nil {
+			log.Error("failed to scan settings", zap.Error(err))
+			return nil, err
+		}
+		res[s.UserId] = s
 	}
 	duration := time.Since(start)
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)

@@ -105,8 +105,9 @@ func main() {
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
 	digestRepo := repository.NewDigestPostgres(dbPool)
 	userRepo := repository.NewUserPostgres(dbPool)
+	settingsRepo := repository.NewSettingsPostgres(dbPool)
 	log.Info("Repository initialized")
-	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo)
+	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo, settingsRepo)
 	log.Info("Usecase initialized")
 
 	batchSize := 500

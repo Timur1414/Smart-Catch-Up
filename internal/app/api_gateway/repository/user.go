@@ -180,12 +180,12 @@ func NewSettingsPostgres(db *pgxpool.Pool) *SettingsPostgres {
 
 func (obj *SettingsPostgres) GetById(ctx context.Context, id int) (domain.Settings, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select user_id, avatar_url, first_name, last_name, updated_at from settings where id = $1;`
+	query := `select user_id, avatar_url, first_name, last_name, updated_at, important from settings where id = $1;`
 	args := []any{id}
 	res := domain.Settings{Id: id}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.UserId, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.UserId, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt, &res.Important)
 	if err != nil {
 		log.Error("failed to get settings by id", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -204,12 +204,12 @@ func (obj *SettingsPostgres) GetById(ctx context.Context, id int) (domain.Settin
 
 func (obj *SettingsPostgres) GetByUser(ctx context.Context, user domain.User) (domain.Settings, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id,avatar_url, first_name, last_name, updated_at from settings where user_id = $1;`
+	query := `select id, avatar_url, first_name, last_name, updated_at, important from settings where user_id = $1;`
 	args := []any{user.Id}
 	res := domain.Settings{UserId: user.Id}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt, &res.Important)
 	if err != nil {
 		log.Error("failed to get settings by user id", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {

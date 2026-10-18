@@ -19,13 +19,15 @@ type Block struct {
 	repository       repository.BlockRepository
 	notificationRepo repository.NotificationRepository
 	digestRepo       repository.DigestRepository
+	settingsRepo     repository.SettingsRepository
 }
 
-func NewBlock(repository repository.BlockRepository, notifRepo repository.NotificationRepository, digestRepo repository.DigestRepository) *Block {
+func NewBlock(repository repository.BlockRepository, notifRepo repository.NotificationRepository, digestRepo repository.DigestRepository, settingsRepo repository.SettingsRepository) *Block {
 	return &Block{
 		repository:       repository,
 		notificationRepo: notifRepo,
 		digestRepo:       digestRepo,
+		settingsRepo:     settingsRepo,
 	}
 }
 
@@ -44,14 +46,40 @@ func (obj *Block) Aggregate(ctx context.Context, startUserID, endUserID int) err
 	for _, notification := range allNotifications {
 		userNotificationMap[notification.RecipientId] = append(userNotificationMap[notification.RecipientId], notification)
 	}
+
+	userIds := make([]int, 0, len(userNotificationMap))
+	for uId := range userNotificationMap {
+		userIds = append(userIds, uId)
+	}
+
+	userSettingsMap, err := obj.settingsRepo.GetByUsers(ctx, userIds)
+	if err != nil {
+		log.Error("failed to get user settings", zap.Error(err))
+		return err
+	}
+
 	for userId, userNotifications := range userNotificationMap {
-		clusterGroups := make(map[string][]domain.Notification)
-		for _, notification := range userNotifications {
-			cluster := GetClusterForNotificationType(notification.NotificationType)
-			clusterGroups[cluster] = append(clusterGroups[cluster], notification)
+		settings := userSettingsMap[userId]
+		importantTypes := make(map[string]bool, len(settings.Important))
+		for _, impType := range settings.Important {
+			importantTypes[impType] = true
 		}
-		parts := make([]domain.BlockPart, 0, len(clusterGroups))
+
+		var importantNotifications []domain.Notification
+		clusterGroups := make(map[string][]domain.Notification)
+
+		for _, notification := range userNotifications {
+			if importantTypes[notification.NotificationType] {
+				importantNotifications = append(importantNotifications, notification)
+			} else {
+				cluster := GetClusterForNotificationType(notification.NotificationType)
+				clusterGroups[cluster] = append(clusterGroups[cluster], notification)
+			}
+		}
+
+		parts := make([]domain.BlockPart, 0, len(clusterGroups)+1)
 		var overAllStart, overAllEnd time.Time
+
 		for cluster, clusterNotifications := range clusterGroups {
 			var clusterStart, clusterEnd time.Time
 			var blockText []string
@@ -80,6 +108,36 @@ func (obj *Block) Aggregate(ctx context.Context, startUserID, endUserID int) err
 				NotificationIds: notificationIds,
 			})
 		}
+
+		if len(importantNotifications) > 0 {
+			var impStart, impEnd time.Time
+			var impTexts []string
+			impNotificationIds := make([]int, 0, len(importantNotifications))
+			for i, notification := range importantNotifications {
+				impNotificationIds = append(impNotificationIds, notification.Id)
+				if i == 0 || notification.CreatedAt.Before(impStart) {
+					impStart = notification.CreatedAt
+				}
+				if i == 0 || notification.CreatedAt.After(impEnd) {
+					impEnd = notification.CreatedAt
+				}
+				impTexts = append(impTexts, notification.Payload)
+			}
+			if overAllStart.IsZero() || impStart.Before(overAllStart) {
+				overAllStart = impStart
+			}
+			if overAllEnd.IsZero() || impEnd.After(overAllEnd) {
+				overAllEnd = impEnd
+			}
+			parts = append(parts, domain.BlockPart{
+				ClusterType:     "important",
+				Text:            strings.Join(impTexts, "\n"),
+				Start:           impStart,
+				End:             impEnd,
+				NotificationIds: impNotificationIds,
+			})
+		}
+
 		if len(parts) == 0 {
 			continue
 		}
