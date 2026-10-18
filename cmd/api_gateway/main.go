@@ -12,9 +12,10 @@ import (
 	fileserverpb "github.com/Timur1414/Smart-Catch-Up/api/proto/file_server"
 	generatorpb "github.com/Timur1414/Smart-Catch-Up/api/proto/generator"
 	delivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/middleware"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/secure/csrf"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
-	"github.com/Timur1414/Smart-Catch-Up/internal/middleware"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
@@ -138,6 +139,12 @@ func main() {
 	_ = clusterUseCase
 	_ = blockPartUseCase
 
+	csrf, err := csrf.NewCsrf(os.Getenv("CSRF_SECRET"))
+	if err != nil {
+		log.Fatal("Failed to initialize CSRF", zap.Error(err))
+		return
+	}
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
@@ -162,7 +169,8 @@ func main() {
 	mux.HandleFunc("GET /users_ids", userHandler.GetAllowedIds)
 	mux.HandleFunc("GET /notification_types", notificationsHandler.GetAllTypes)
 
-	handler := middleware.AuthMiddleware(mux, authClient)
+	handler := middleware.CSRFMiddleware(mux, csrf)
+	handler = middleware.AuthMiddleware(handler, authClient)
 	handler = middleware.CORSMiddleware(handler)
 	handler = middleware.AccessLogMiddleware(handler)
 	handler = middleware.PanicMiddleware(handler)

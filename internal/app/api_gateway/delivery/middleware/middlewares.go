@@ -9,9 +9,10 @@ import (
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	apiDelivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/secure/csrf"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	web_helpers2 "github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
@@ -47,8 +48,8 @@ func PanicMiddleware(next http.Handler) http.Handler {
 						zap.String("request_id", requestId),
 						zap.Any("err", err))
 				}
-				response := web_helpers2.NewServerErrorResponse(requestId)
-				web_helpers2.WriteResponseJSON(w, response.Code, response)
+				response := web_helpers.NewServerErrorResponse(requestId)
+				web_helpers.WriteResponseJSON(w, response.Code, response)
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -95,14 +96,14 @@ func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handle
 		cookie, err := apiDelivery.GetAccessCookie(r.Context(), r)
 		if err != nil {
 			log.Error("[auth middleware] failed to get access cookie", zap.String("path", path), zap.Error(err))
-			response := web_helpers2.NewUnauthorizedResponse(requestId)
-			web_helpers2.WriteResponseJSON(w, response.Code, response)
+			response := web_helpers.NewUnauthorizedResponse(requestId)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
 			return
 		}
 		authResponse, err := authServer.IsAuth(r.Context(), &authpb.IsAuthRequest{AccessToken: cookie.Value})
 		if err != nil || !authResponse.GetIsAuth() {
-			response := web_helpers2.NewUnauthorizedResponse(requestId)
-			web_helpers2.WriteResponseJSON(w, response.Code, response)
+			response := web_helpers.NewUnauthorizedResponse(requestId)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
 			return
 		}
 		ctx := context.WithValue(r.Context(), context_helper.ContextKeyUser, int(authResponse.GetUserId()))
@@ -124,20 +125,59 @@ func CORSMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func CSRFMiddleware(next http.Handler) http.Handler {
+func CSRFMiddleware(next http.Handler, csrfService csrf.Service) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := logger.GetLoggerWithRequestId(r.Context())
 		if strings.HasPrefix(r.URL.Path, "/auth/") || r.URL.Path == "/healthz" {
 			next.ServeHTTP(w, r)
 			return
 		}
-		// ToDo ValidateSecFetchSite
+		requestId := context_helper.GetRequestIdFromContext(r.Context())
+		if !csrfService.ValidateSecFetchSite(r) {
+			response := web_helpers.NewForbiddenResponse(requestId)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
+			return
+		}
 		if r.Method == http.MethodGet || r.Method == http.MethodOptions || r.Method == http.MethodHead || r.Method == http.MethodTrace || r.Method == http.MethodConnect {
-			// ToDo set CSRF token
+			csrfService.SetCsrfCookie(r.Context(), w, r)
 			next.ServeHTTP(w, r)
 			return
 		}
 		log.Info("[CSRF middleware] check CSRF token", zap.String("path", r.URL.Path))
+		accessToken, err := csrfService.GetAccessToken(r.Context(), r)
+		if err != nil {
+			log.Warn("[CSRF middleware] failed to get access token from cookie", zap.String("path", r.URL.Path), zap.Error(err))
+			response := web_helpers.NewUnauthorizedResponse(requestId)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
+			return
+		}
+		csrfCookieToken := csrfService.GetCsrfFromCookie(r.Context(), r)
+		if csrfCookieToken == "" {
+			log.Warn("[CSRF middleware] no CSRF cookie in request")
+			response := web_helpers.NewForbiddenResponse(requestId)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
+			return
+		}
+		isValid, err := csrfService.ValidateCsrf(r.Context(), csrfCookieToken, accessToken)
+		if err != nil || !isValid {
+			log.Warn("[CSRF middleware] invalid CSRF cookie in request")
+			response := web_helpers.NewForbiddenResponse(requestId)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
+			return
+		}
+		csrfHeaderToken := csrfService.GetCsrfFromHeader(r)
+		if csrfHeaderToken == "" {
+			log.Warn("[CSRF middleware] no CSRF header in request")
+			response := web_helpers.NewForbiddenResponse(requestId)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
+			return
+		}
+		if csrfHeaderToken != csrfCookieToken {
+			log.Warn("[CSRF middleware] invalid CSRF header in request")
+			response := web_helpers.NewForbiddenResponse(requestId)
+			web_helpers.WriteResponseJSON(w, response.Code, response)
+			return
+		}
 		next.ServeHTTP(w, r)
 	})
 }
