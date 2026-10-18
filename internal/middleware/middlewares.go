@@ -123,3 +123,21 @@ func CORSMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func CSRFMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log := logger.GetLoggerWithRequestId(r.Context())
+		if strings.HasPrefix(r.URL.Path, "/auth/") || r.URL.Path == "/healthz" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// ToDo ValidateSecFetchSite
+		if r.Method == http.MethodGet || r.Method == http.MethodOptions || r.Method == http.MethodHead || r.Method == http.MethodTrace || r.Method == http.MethodConnect {
+			// ToDo set CSRF token
+			next.ServeHTTP(w, r)
+			return
+		}
+		log.Info("[CSRF middleware] check CSRF token", zap.String("path", r.URL.Path))
+		next.ServeHTTP(w, r)
+	})
+}
