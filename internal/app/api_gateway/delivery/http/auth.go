@@ -314,7 +314,7 @@ func WriteAuthCookies(w http.ResponseWriter, accessToken string, refreshToken st
 		Expires:  time.Now().Add(RefreshTokenExpirationTime).UTC(),
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	})
 }
 
@@ -335,6 +335,6 @@ func ClearAuthCookies(w http.ResponseWriter) {
 		Expires:  time.Now().AddDate(0, -1, 0).UTC(),
 		Secure:   true,
 		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteStrictMode,
 	})
 }

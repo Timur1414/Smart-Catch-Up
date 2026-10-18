@@ -84,7 +84,7 @@ func (obj *Csrf) SetCsrfCookie(ctx context.Context, w http.ResponseWriter, r *ht
 		HttpOnly: false,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Now().Add(CookieExpirationTime),
+		Expires:  time.Now().Add(CookieExpirationTime).UTC(),
 	})
 	rawCsrfToken, err := obj.getCsrfValueFromToken(ctx, signedCsrfToken)
 	if err != nil {
