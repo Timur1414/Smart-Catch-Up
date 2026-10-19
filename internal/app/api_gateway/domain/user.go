@@ -3,12 +3,13 @@ package domain
 import "time"
 
 type User struct {
-	Id        int
-	IsStaff   bool
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Email     string
-	Active    bool
+	Id         int
+	IsStaff    bool
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+	Email      string
+	Active     bool
+	Enabled2FA bool
 }
 
 type Settings struct {
