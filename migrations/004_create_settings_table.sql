@@ -4,6 +4,7 @@ create table if not exists settings (
     avatar_url text not null default 'default.png',
     first_name text,
     last_name text,
+    important text[] not null default '{}',
     updated_at timestamptz default null
 );
 

@@ -12,4 +12,5 @@ type Settings struct {
 	AvatarUrl string
 	FirstName string
 	LastName  string
+	Important []string
 }

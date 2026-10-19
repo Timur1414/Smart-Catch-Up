@@ -100,7 +100,8 @@ create type cluster_type_enum as enum (
     'payments_and_subscriptions',
     'security_and_account_state',
     'events_reminders_and_recommendations',
-    'service_and_promo_messages'
+    'service_and_promo_messages',
+    'important'
 );
 
 create type block_status_enum as enum (
