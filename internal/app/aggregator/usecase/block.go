@@ -95,7 +95,7 @@ func (obj *Block) Aggregate(ctx context.Context, startUserID, endUserID int) err
 			}
 			parts = append(parts, domain.BlockPart{
 				ClusterType:     cluster,
-				Text:            obj.generateBlockText(true, clusterNotifications),
+				Text:            textGenerator.Generate(),
 				Start:           clusterStart,
 				End:             clusterEnd,
 				NotificationIds: notificationIds,
@@ -130,15 +130,6 @@ func (obj *Block) Aggregate(ctx context.Context, startUserID, endUserID int) err
 	return nil
 }
 
-func (obj *Block) generateBlockText(important bool, notifications []domain.Notification) string {
-	// ToDo important and no important strategies
-	var blockText []string
-	for _, notification := range notifications {
-		blockText = append(blockText, notification.ActorName+": "+notification.Payload)
-	}
-	return strings.Join(blockText, "\n")
-}
-
 type TextGeneratorStrategy interface {
 	Generate() string
 }
@@ -159,7 +150,7 @@ func (obj *BaseTextGeneratorStrategy) Generate() string {
 	// ToDo llm
 	var blockText []string
 	for _, notification := range obj.notifications {
-		blockText = append(blockText, notification.ActorName+": "+notification.Payload)
+		blockText = append(blockText, notification.Payload)
 	}
 	return strings.Join(blockText, "\n")
 }
