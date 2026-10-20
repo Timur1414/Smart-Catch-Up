@@ -46,6 +46,14 @@ func (obj *DigestHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	importantBlocks := make([]domain.BlockPart, 0)
-	response := NewDigestResponse(requestId, digest, importantBlocks, block.Parts)
+	baseBlocks := make([]domain.BlockPart, 0)
+	for _, part := range block.Parts {
+		if part.ClusterType == "important" {
+			importantBlocks = append(importantBlocks, part)
+		} else {
+			baseBlocks = append(baseBlocks, part)
+		}
+	}
+	response := NewDigestResponse(requestId, digest, importantBlocks, baseBlocks)
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
