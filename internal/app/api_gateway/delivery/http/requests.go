@@ -24,9 +24,10 @@ type RegisterRequest struct {
 }
 
 type UpdateProfileRequest struct {
-	Email     string `json:"email"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
+	Email          string   `json:"email"`
+	FirstName      string   `json:"first_name"`
+	LastName       string   `json:"last_name"`
+	ImportantTypes []string `json:"important_types"`
 }
 
 type Login2FARequest struct {

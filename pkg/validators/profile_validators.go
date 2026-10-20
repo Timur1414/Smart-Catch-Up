@@ -2,7 +2,7 @@ package validators
 
 import "github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 
-func ValidateUpdateProfile(email, firstName, lastName string) []web_helpers.ValidationError {
+func ValidateUpdateProfile(email, firstName, lastName string, importantTypes []string, allowedTypes []string) []web_helpers.ValidationError {
 	errors := make([]web_helpers.ValidationError, 0)
 	err := validateEmail(email)
 	if err != nil {
@@ -15,6 +15,10 @@ func ValidateUpdateProfile(email, firstName, lastName string) []web_helpers.Vali
 	err = validateNotEmpty(lastName)
 	if err != nil {
 		errors = append(errors, web_helpers.ValidationError{Field: "last_name", Message: err.Error()})
+	}
+	err = validateAllContains(importantTypes, allowedTypes)
+	if err != nil {
+		errors = append(errors, web_helpers.ValidationError{Field: "important_types", Message: err.Error()})
 	}
 	return errors
 }

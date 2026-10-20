@@ -18,18 +18,20 @@ import (
 )
 
 type UserHandler struct {
-	userUsecase     usecase.UserUseCase
-	settingsUsecase usecase.SettingsUseCase
-	fileserver      fileserverpb.FileServerClient
+	userUsecase         usecase.UserUseCase
+	settingsUsecase     usecase.SettingsUseCase
+	fileserver          fileserverpb.FileServerClient
+	notificationUsecase usecase.NotificationUseCase
 }
 
 const maxAvatarSize = 5 * 1024 * 1024
 
-func NewUserHandler(userUsecase usecase.UserUseCase, settings usecase.SettingsUseCase, fileserverClient fileserverpb.FileServerClient) *UserHandler {
+func NewUserHandler(userUsecase usecase.UserUseCase, settings usecase.SettingsUseCase, fileserverClient fileserverpb.FileServerClient, notifUsecase usecase.NotificationUseCase) *UserHandler {
 	return &UserHandler{
-		userUsecase:     userUsecase,
-		settingsUsecase: settings,
-		fileserver:      fileserverClient,
+		userUsecase:         userUsecase,
+		settingsUsecase:     settings,
+		fileserver:          fileserverClient,
+		notificationUsecase: notifUsecase,
 	}
 }
 
@@ -80,7 +82,13 @@ func (obj *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	validationErrors := validators.ValidateUpdateProfile(request.Email, request.FirstName, request.LastName)
+	allowedTypes, err := obj.notificationUsecase.GetAllTypes(r.Context())
+	if err != nil {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	validationErrors := validators.ValidateUpdateProfile(request.Email, request.FirstName, request.LastName, request.ImportantTypes, allowedTypes)
 	if len(validationErrors) > 0 {
 		response := web_helpers.NewValidationErrorResponse(requestId, validationErrors)
 		web_helpers.WriteResponseJSON(w, response.Code, response)
@@ -89,6 +97,7 @@ func (obj *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	user.Email = request.Email
 	settings.FirstName = request.FirstName
 	settings.LastName = request.LastName
+	settings.Important = request.ImportantTypes
 	err = obj.userUsecase.Update(r.Context(), user)
 	if err != nil {
 		if errors.Is(err, domain.ErrDuplicatedData) {

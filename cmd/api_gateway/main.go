@@ -130,7 +130,7 @@ func main() {
 	blockUseCase := usecase.NewBlock(blockRepo)
 	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
 	log.Info("UseCase initialized")
-	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase, fileserverClient)
+	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase, fileserverClient, notificationUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase, blockUseCase)
 	adminHandler := delivery.NewAdminHandler(generatorClient, userUseCase, notificationUseCase)
 	authHandler := delivery.NewAuthHandler(authClient)
@@ -139,7 +139,7 @@ func main() {
 	_ = clusterUseCase
 	_ = blockPartUseCase
 
-	csrf, err := csrf.NewCsrf(os.Getenv("CSRF_SECRET"))
+	csrfServer, err := csrf.NewCsrf(os.Getenv("CSRF_SECRET"))
 	if err != nil {
 		log.Fatal("Failed to initialize CSRF", zap.Error(err))
 		return
@@ -169,7 +169,7 @@ func main() {
 	mux.HandleFunc("GET /users_ids", userHandler.GetAllowedIds)
 	mux.HandleFunc("GET /notification_types", notificationsHandler.GetAllTypes)
 
-	handler := middleware.CSRFMiddleware(mux, csrf)
+	handler := middleware.CSRFMiddleware(mux, csrfServer)
 	handler = middleware.AuthMiddleware(handler, authClient)
 	handler = middleware.CORSMiddleware(handler)
 	handler = middleware.AccessLogMiddleware(handler)

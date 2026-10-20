@@ -64,12 +64,14 @@ func NewLogoutSuccessResponse(requestId string) LogoutSuccessResponse {
 
 type UserResponse struct {
 	web_helpers.UuidResponse
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
-	AvatarUrl string    `json:"avatar_url"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	IsStaff   bool      `json:"is_staff"`
+	Email      string    `json:"email"`
+	CreatedAt  time.Time `json:"created_at"`
+	AvatarUrl  string    `json:"avatar_url"`
+	FirstName  string    `json:"first_name"`
+	LastName   string    `json:"last_name"`
+	IsStaff    bool      `json:"is_staff"`
+	Enabled2FA bool      `json:"enabled_2fa"`
+	Important  []string  `json:"important"`
 }
 
 func NewUserResponse(requestId string, user domain.User, settings domain.Settings) UserResponse {
@@ -81,6 +83,8 @@ func NewUserResponse(requestId string, user domain.User, settings domain.Setting
 		FirstName:    settings.FirstName,
 		LastName:     settings.LastName,
 		IsStaff:      user.IsStaff,
+		Enabled2FA:   user.Enabled2FA,
+		Important:    settings.Important,
 	}
 }
 

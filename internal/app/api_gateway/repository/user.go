@@ -40,12 +40,12 @@ func NewUserPostgres(db *pgxpool.Pool) *UserPostgres {
 
 func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select is_staff, created_at, updated_at, email from "user" where id = $1 and active = true;`
+	query := `select is_staff, created_at, updated_at, email, totp_enabled from "user" where id = $1 and active = true;`
 	args := []any{id}
 	res := domain.User{Id: id, Active: true}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.IsStaff, &res.CreatedAt, &updatedAt, &res.Email)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.IsStaff, &res.CreatedAt, &updatedAt, &res.Email, &res.Enabled2FA)
 	if err != nil {
 		log.Error("failed to get user by id", zap.Int("id", id), zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -64,12 +64,12 @@ func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, erro
 
 func (obj *UserPostgres) GetByEmail(ctx context.Context, email string) (domain.User, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, is_staff, created_at, updated_at from "user" where email = $1 and active = true;`
+	query := `select id, is_staff, created_at, updated_at, totp_enabled from "user" where email = $1 and active = true;`
 	args := []any{email}
 	res := domain.User{Email: email, Active: true}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.IsStaff, &res.CreatedAt, &updatedAt)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.IsStaff, &res.CreatedAt, &updatedAt, &res.Enabled2FA)
 	if err != nil {
 		log.Error("failed to get user by email", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -180,12 +180,12 @@ func NewSettingsPostgres(db *pgxpool.Pool) *SettingsPostgres {
 
 func (obj *SettingsPostgres) GetById(ctx context.Context, id int) (domain.Settings, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select user_id, avatar_url, first_name, last_name, updated_at from settings where id = $1;`
+	query := `select user_id, avatar_url, first_name, last_name, updated_at, important from settings where id = $1;`
 	args := []any{id}
 	res := domain.Settings{Id: id}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.UserId, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.UserId, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt, &res.Important)
 	if err != nil {
 		log.Error("failed to get settings by id", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -204,12 +204,12 @@ func (obj *SettingsPostgres) GetById(ctx context.Context, id int) (domain.Settin
 
 func (obj *SettingsPostgres) GetByUser(ctx context.Context, user domain.User) (domain.Settings, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id,avatar_url, first_name, last_name, updated_at from settings where user_id = $1;`
+	query := `select id,avatar_url, first_name, last_name, updated_at, important from settings where user_id = $1;`
 	args := []any{user.Id}
 	res := domain.Settings{UserId: user.Id}
 	var updatedAt pgtype.Timestamp
 	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt)
+	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt, &res.Important)
 	if err != nil {
 		log.Error("failed to get settings by user id", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -228,8 +228,8 @@ func (obj *SettingsPostgres) GetByUser(ctx context.Context, user domain.User) (d
 
 func (obj *SettingsPostgres) Update(ctx context.Context, settings domain.Settings) error {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `update settings set first_name = $1, last_name = $2 where id = $3;`
-	args := []any{settings.FirstName, settings.LastName, settings.Id}
+	query := `update settings set first_name = $1, last_name = $2, important = $3 where id = $4;`
+	args := []any{settings.FirstName, settings.LastName, settings.Important, settings.Id}
 	start := time.Now()
 	_, err := obj.db.Exec(ctx, query, args...)
 	if err != nil {
