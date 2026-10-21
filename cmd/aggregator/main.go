@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/openrouter"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
@@ -101,13 +103,24 @@ func main() {
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
+	openRouterClient, err := openrouter.NewClient(
+		os.Getenv("OPENROUTER_API_KEY"),
+		os.Getenv("OPENROUTER_BASE_URL"),
+		os.Getenv("OPENROUTER_MODEL"),
+		&http.Client{},
+	)
+	if err != nil {
+		log.Fatal("Failed to initialize open router client", zap.Error(err))
+		return
+	}
+
 	blockRepo := repository.NewBlockPostgres(dbPool)
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
 	digestRepo := repository.NewDigestPostgres(dbPool)
 	userRepo := repository.NewUserPostgres(dbPool)
 	settingsRepo := repository.NewSettingsPostgres(dbPool)
 	log.Info("Repository initialized")
-	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo, settingsRepo)
+	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo, settingsRepo, openRouterClient)
 	log.Info("Usecase initialized")
 
 	batchSize := 500
