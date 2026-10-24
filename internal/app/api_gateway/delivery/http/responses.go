@@ -168,7 +168,7 @@ func NewDigestResponse(requestId string, digest domain.Digest, importantBlocks [
 	}
 	return DigestResponse{
 		UuidResponse: web_helpers.NewUuidResponse(http.StatusOK, "Ok", requestId),
-		CreatedAt:    digest.CreatedAt,
+		CreatedAt:    digest.UpdatedAt,
 		Important:    importantResponses,
 		Categories:   categoriesResponses,
 	}
