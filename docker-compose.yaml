@@ -256,4 +256,5 @@ volumes:
 
 networks:
   scu-network:
+    name: scu-network
     driver: bridge
