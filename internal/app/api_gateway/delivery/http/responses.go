@@ -141,12 +141,14 @@ func NewImportantNotificationResponse(notification domain.BlockPart) ImportantNo
 type NotificationCategoryResponse struct {
 	CategoryType string `json:"category_type"`
 	Text         string `json:"text"`
+	Rank         int    `json:"rank"`
 }
 
 func NewNotificationCategoryResponse(notificationCategory domain.BlockPart) NotificationCategoryResponse {
 	return NotificationCategoryResponse{
 		CategoryType: notificationCategory.ClusterType,
 		Text:         notificationCategory.Text,
+		Rank:         notificationCategory.Rank,
 	}
 }
 

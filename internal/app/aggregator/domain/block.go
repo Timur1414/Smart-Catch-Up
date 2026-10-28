@@ -19,4 +19,5 @@ type BlockPart struct {
 	Start           time.Time
 	End             time.Time
 	NotificationIds []int
+	Rank            int
 }

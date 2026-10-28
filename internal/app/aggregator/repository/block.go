@@ -39,13 +39,14 @@ func (obj *BlockPostgres) Create(ctx context.Context, block domain.Block) (int, 
 		log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 		log.Info("Query executed")
 
-		query = `insert into block_part(block_id, cluster, text, start_at, end_at) values ($1, $2, $3, $4, $5);`
+		log = logger.GetLoggerWithRequestId(ctx)
+		query = `insert into block_part(block_id, cluster, text, start_at, end_at, rank) values ($1, $2, $3, $4, $5, $6);`
 		for _, part := range block.Parts {
-			args = []any{blockId, part.ClusterType, part.Text, part.Start, part.End}
+			args = []any{blockId, part.ClusterType, part.Text, part.Start, part.End, part.Rank}
 			start = time.Now()
 			_, err = tx.Exec(ctx, query, args...)
 			if err != nil {
-				log.Error("failed to create block", zap.Error(err))
+				log.Error("failed to create block part", zap.Error(err))
 				return err
 			}
 			updateNotificationsQuery := `update notification set cluster = $1 where id = any($2);`

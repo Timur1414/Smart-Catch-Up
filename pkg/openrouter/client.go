@@ -20,9 +20,10 @@ type Message struct {
 }
 
 type ChatRequest struct {
-	Model       string    `json:"model"`
-	Messages    []Message `json:"messages"`
-	Temperature float32   `json:"temperature,omitempty"`
+	Model          string         `json:"model"`
+	Messages       []Message      `json:"messages"`
+	Temperature    float32        `json:"temperature,omitempty"`
+	ResponseFormat map[string]any `json:"response_format,omitempty"`
 }
 
 type ResponseError struct {
@@ -99,7 +100,8 @@ func (obj *Client) GenerateAnswer(ctx context.Context, systemPrompt, userPrompt 
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: userPrompt},
 		},
-		Temperature: 0.3,
+		Temperature:    0.3,
+		ResponseFormat: map[string]any{"type": "json_object"},
 	}
 	data, err := json.Marshal(requestConfig)
 	if err != nil {

@@ -54,7 +54,7 @@ func (obj *BlockPostgres) GetById(ctx context.Context, id int) (domain.Block, er
 	log.Info("Query executed")
 
 	log = logger.GetLoggerWithRequestId(ctx)
-	query = `select id, cluster, text, start_at, end_at from block_part where block_id = $1;`
+	query = `select id, cluster, text, start_at, end_at, rank from block_part where block_id = $1;`
 	args = []any{id}
 	parts := make([]domain.BlockPart, 0)
 	start = time.Now()
@@ -66,7 +66,7 @@ func (obj *BlockPostgres) GetById(ctx context.Context, id int) (domain.Block, er
 	defer rows.Close()
 	for rows.Next() {
 		part := domain.BlockPart{BlockId: id}
-		err = rows.Scan(&part.Id, &part.ClusterType, &part.Text, &part.Start, &part.End)
+		err = rows.Scan(&part.Id, &part.ClusterType, &part.Text, &part.Start, &part.End, &part.Rank)
 		if err != nil {
 			log.Error("failed to scan block part", zap.Int("blockId", id), zap.Error(err))
 			return domain.Block{}, err

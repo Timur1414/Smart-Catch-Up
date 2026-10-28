@@ -18,4 +18,5 @@ type BlockPart struct {
 	Text        string
 	Start       time.Time
 	End         time.Time
+	Rank        int
 }
