@@ -9,10 +9,9 @@ var (
 )
 
 var (
-	ErrSecretTooShort    = errors.New("secret too short")
-	ErrVersionIsEmpty    = errors.New("version is empty")
-	ErrFailedToSignToken = errors.New("failed to sign token")
-	ErrInvalidTokenType  = errors.New("invalid token type")
+	ErrSecretTooShort   = errors.New("secret too short")
+	ErrVersionIsEmpty   = errors.New("version is empty")
+	ErrInvalidTokenType = errors.New("invalid token type")
 )
 
 var (

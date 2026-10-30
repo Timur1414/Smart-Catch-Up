@@ -9,14 +9,12 @@ import (
 
 type UserUseCase interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
-	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	GetAllIds(ctx context.Context) ([]int, error)
 	GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error)
 	Update(ctx context.Context, user domain.User) error
 }
 
 type SettingsUseCase interface {
-	GetById(ctx context.Context, id int) (domain.Settings, error)
 	GetByUser(ctx context.Context, user domain.User) (domain.Settings, error)
 	Update(ctx context.Context, settings domain.Settings) error
 	UpdateAvatar(ctx context.Context, id int, avatarUrl string) error
@@ -32,11 +30,6 @@ func NewUser(repo repository.UserRepository) *User {
 
 func (obj *User) GetById(ctx context.Context, id int) (domain.User, error) {
 	return obj.repository.GetById(ctx, id)
-}
-
-func (obj *User) GetByEmail(ctx context.Context, email string) (domain.User, error) {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (obj *User) GetAllIds(ctx context.Context) ([]int, error) {
@@ -57,10 +50,6 @@ type Settings struct {
 
 func NewSettings(repo repository.SettingsRepository) *Settings {
 	return &Settings{repository: repo}
-}
-
-func (obj *Settings) GetById(ctx context.Context, id int) (domain.Settings, error) {
-	return obj.repository.GetById(ctx, id)
 }
 
 func (obj *Settings) GetByUser(ctx context.Context, user domain.User) (domain.Settings, error) {

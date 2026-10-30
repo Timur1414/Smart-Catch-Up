@@ -17,14 +17,12 @@ import (
 
 type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
-	GetByEmail(ctx context.Context, email string) (domain.User, error)
 	GetAllIds(ctx context.Context) ([]int, error)
 	GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error)
 	Update(ctx context.Context, user domain.User) error
 }
 
 type SettingsRepository interface {
-	GetById(ctx context.Context, id int) (domain.Settings, error)
 	GetByUser(ctx context.Context, user domain.User) (domain.Settings, error)
 	Update(ctx context.Context, settings domain.Settings) error
 	UpdateAvatar(ctx context.Context, id int, avatarUrl string) error
@@ -48,30 +46,6 @@ func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, erro
 	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.IsStaff, &res.CreatedAt, &updatedAt, &res.Email, &res.Enabled2FA)
 	if err != nil {
 		log.Error("failed to get user by id", zap.Int("id", id), zap.Error(err))
-		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.User{}, domain.ErrNothingInTable
-		}
-		return domain.User{}, err
-	}
-	duration := time.Since(start)
-	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
-	if updatedAt.Valid {
-		res.UpdatedAt = updatedAt.Time
-	}
-	log.Info("Query executed")
-	return res, nil
-}
-
-func (obj *UserPostgres) GetByEmail(ctx context.Context, email string) (domain.User, error) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id, is_staff, created_at, updated_at, totp_enabled from "user" where email = $1 and active = true;`
-	args := []any{email}
-	res := domain.User{Email: email, Active: true}
-	var updatedAt pgtype.Timestamp
-	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Id, &res.IsStaff, &res.CreatedAt, &updatedAt, &res.Enabled2FA)
-	if err != nil {
-		log.Error("failed to get user by email", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
 			return domain.User{}, domain.ErrNothingInTable
 		}
@@ -176,30 +150,6 @@ type SettingsPostgres struct {
 
 func NewSettingsPostgres(db *pgxpool.Pool) *SettingsPostgres {
 	return &SettingsPostgres{db: db}
-}
-
-func (obj *SettingsPostgres) GetById(ctx context.Context, id int) (domain.Settings, error) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select user_id, avatar_url, first_name, last_name, updated_at, important from settings where id = $1;`
-	args := []any{id}
-	res := domain.Settings{Id: id}
-	var updatedAt pgtype.Timestamp
-	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.UserId, &res.AvatarUrl, &res.FirstName, &res.LastName, &updatedAt, &res.Important)
-	if err != nil {
-		log.Error("failed to get settings by id", zap.Error(err))
-		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Settings{}, domain.ErrNothingInTable
-		}
-		return domain.Settings{}, err
-	}
-	duration := time.Since(start)
-	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
-	if updatedAt.Valid {
-		res.UpdatedAt = updatedAt.Time
-	}
-	log.Info("Query executed")
-	return res, nil
 }
 
 func (obj *SettingsPostgres) GetByUser(ctx context.Context, user domain.User) (domain.Settings, error) {

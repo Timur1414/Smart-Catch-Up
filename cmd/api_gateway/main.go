@@ -118,17 +118,13 @@ func main() {
 	settingsRepo := repository.NewSettingsPostgres(dbPool)
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
 	digestRepo := repository.NewDigestPostgres(dbPool)
-	clusterRepo := repository.NewClusterPostgres(dbPool)
 	blockRepo := repository.NewBlockPostgres(dbPool)
-	blockPartRepo := repository.NewBlockPartPostgres(dbPool)
 	log.Info("Repository initialized")
 	userUseCase := usecase.NewUser(userRepo)
 	settingsUseCase := usecase.NewSettings(settingsRepo)
 	notificationUseCase := usecase.NewNotification(notificationRepo)
 	digestUseCase := usecase.NewDigest(digestRepo)
-	clusterUseCase := usecase.NewCluster(clusterRepo)
 	blockUseCase := usecase.NewBlock(blockRepo)
-	blockPartUseCase := usecase.NewBlockPart(blockPartRepo)
 	log.Info("UseCase initialized")
 	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase, fileserverClient, notificationUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase, blockUseCase)
@@ -136,8 +132,6 @@ func main() {
 	authHandler := delivery.NewAuthHandler(authClient)
 	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
 	log.Info("Handler initialized")
-	_ = clusterUseCase
-	_ = blockPartUseCase
 
 	csrfServer, err := csrf.NewCsrf(os.Getenv("CSRF_SECRET"))
 	if err != nil {

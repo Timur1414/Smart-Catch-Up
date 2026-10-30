@@ -2,18 +2,15 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/generator/domain"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )
 
 type UserRepository interface {
-	GetById(ctx context.Context, id int) (domain.User, error)
 	GetActors(ctx context.Context, excludeUserIds []int) ([]domain.NotificationActor, error)
 }
 
@@ -27,26 +24,6 @@ type UserPostgres struct {
 
 func NewUserPostgres(db *pgxpool.Pool) *UserPostgres {
 	return &UserPostgres{db: db}
-}
-
-func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, error) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select email from "user" where id = $1 and active = true;`
-	args := []any{id}
-	res := domain.User{Id: id, Active: true}
-	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&res.Email)
-	if err != nil {
-		log.Error("failed to get user by id", zap.Int("id", id), zap.Error(err))
-		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.User{}, domain.ErrNothingInTable
-		}
-		return domain.User{}, err
-	}
-	duration := time.Since(start)
-	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
-	log.Info("Query executed")
-	return res, nil
 }
 
 func (obj *UserPostgres) GetActors(ctx context.Context, excludeUserIds []int) ([]domain.NotificationActor, error) {

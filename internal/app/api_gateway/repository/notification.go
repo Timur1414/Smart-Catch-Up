@@ -14,7 +14,6 @@ import (
 )
 
 type NotificationRepository interface {
-	GetById(ctx context.Context, id int) (domain.Notification, error)
 	GetByUser(ctx context.Context, userId int, limit int) ([]domain.Notification, error)
 	GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error)
 	GetAllTypes(ctx context.Context) ([]string, error)
@@ -26,34 +25,6 @@ type NotificationPostgres struct {
 
 func NewNotificationPostgres(db *pgxpool.Pool) *NotificationPostgres {
 	return &NotificationPostgres{db: db}
-}
-
-func (obj *NotificationPostgres) GetById(ctx context.Context, id int) (domain.Notification, error) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select cluster, notification_type, recipient_id, actor_id, actor_name, object_id, object_type, created_at, read_at, payload from notification where id = $1;`
-	args := []any{id}
-	res := domain.Notification{Id: id}
-	var cluster pgtype.Text
-	var readAt pgtype.Timestamp
-	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&cluster, &res.NotificationType, &res.RecipientId, &res.ActorId, &res.ActorName, &res.ObjectId, &res.ObjectType, &res.CreatedAt, &readAt, &res.Payload)
-	if err != nil {
-		log.Error("failed to get notification", zap.Error(err))
-		if errors.Is(err, pgx.ErrNoRows) {
-			return domain.Notification{}, domain.ErrNothingInTable
-		}
-		return domain.Notification{}, err
-	}
-	duration := time.Since(start)
-	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
-	if cluster.Valid {
-		res.Cluster = cluster.String
-	}
-	if readAt.Valid {
-		res.ReadAt = readAt.Time
-	}
-	log.Info("Query executed")
-	return res, nil
 }
 
 func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limit int) ([]domain.Notification, error) {

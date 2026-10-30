@@ -8,7 +8,6 @@ import (
 )
 
 type NotificationUseCase interface {
-	GetById(ctx context.Context, id int) (domain.Notification, error)
 	GetByUser(ctx context.Context, userId int) ([]domain.Notification, error)
 	GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error)
 	GetAllTypes(ctx context.Context) ([]string, error)
@@ -20,10 +19,6 @@ type Notification struct {
 
 func NewNotification(repo repository.NotificationRepository) *Notification {
 	return &Notification{repository: repo}
-}
-
-func (obj *Notification) GetById(ctx context.Context, id int) (domain.Notification, error) {
-	return obj.repository.GetById(ctx, id)
 }
 
 func (obj *Notification) GetByUser(ctx context.Context, userId int) ([]domain.Notification, error) {
