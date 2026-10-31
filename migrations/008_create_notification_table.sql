@@ -1,6 +1,6 @@
 create table if not exists notification (
     id int primary key generated always as identity,
-    cluster cluster_type_enum default null,
+    cluster text default null,
     notification_type notification_type_enum not null,
     recipient_id int not null references "user"(id) on delete cascade,
     actor_id int not null references "user"(id) on delete cascade,
