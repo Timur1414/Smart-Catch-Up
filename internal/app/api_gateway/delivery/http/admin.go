@@ -123,6 +123,7 @@ func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
 }
 
 func getAllowedAdminData(ctx context.Context, notificationUsecase usecase.NotificationUseCase, userUsecase usecase.UserUseCase) ([]string, []int, error) {
+	// ToDo switch to db query: SELECT id FROM "user" WHERE id = ANY($1) AND active = true; and compare len(ids) == len(found_ids)
 	allowedTypes, err := notificationUsecase.GetAllTypes(ctx)
 	if err != nil {
 		return nil, nil, err

@@ -28,8 +28,8 @@ type Service interface {
 
 const (
 	HeaderName           = "X-CSRF-Token"
-	CookieName           = "csrf_token"
-	CookieExpirationTime = time.Hour
+	CookieName           = "__Host-csrf_token"
+	CookieExpirationTime = 5 * time.Minute
 )
 
 type Csrf struct {
@@ -86,11 +86,6 @@ func (obj *Csrf) SetCsrfCookie(ctx context.Context, w http.ResponseWriter, r *ht
 		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(CookieExpirationTime).UTC(),
 	})
-	rawCsrfToken, err := obj.getCsrfValueFromToken(ctx, signedCsrfToken)
-	if err != nil {
-		return
-	}
-	w.Header().Set(HeaderName, rawCsrfToken)
 }
 
 func (obj *Csrf) GetCsrfFromCookie(ctx context.Context, r *http.Request) string {
@@ -156,16 +151,6 @@ func (obj *Csrf) generateRandValue(ctx context.Context) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(data), nil
-}
-
-func (obj *Csrf) getCsrfValueFromToken(ctx context.Context, csrf string) (string, error) {
-	parts := strings.Split(csrf, ".")
-	if len(parts) != 2 {
-		log := logger.GetLoggerWithRequestId(ctx)
-		log.Warn("Get invalid CSRF value")
-		return "", ErrInvalidCsrf
-	}
-	return parts[1], nil
 }
 
 func (obj *Csrf) generateSignedCsrf(ctx context.Context, token string) (string, error) {

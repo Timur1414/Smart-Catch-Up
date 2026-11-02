@@ -67,7 +67,7 @@ func main() {
 	generatorServer := generatorDelivery.NewGeneratorServer(notificationUsecase)
 	log.Info("Generator gRPC server initialized")
 
-	grpcPort := os.Getenv("AUTH_GRPC_PORT")
+	grpcPort := os.Getenv("GEN_GRPC_PORT")
 	if grpcPort == "" {
 		grpcPort = "50052"
 	}

@@ -1,4 +1,4 @@
-package openrouter
+package llm
 
 import (
 	"bytes"
@@ -154,13 +154,13 @@ func (obj *Client) GenerateAnswer(ctx context.Context, systemPrompt, userPrompt 
 			}
 			if err := json.Unmarshal(body, &errResp); err == nil {
 				if errResp.Error != nil {
-					return "", fmt.Errorf("openrouter error (HTTP %d): %s", resp.StatusCode, errResp.Error.Error())
+					return "", fmt.Errorf("llm error (HTTP %d): %s", resp.StatusCode, errResp.Error.Error())
 				}
 				if errResp.Message != "" {
-					return "", fmt.Errorf("openrouter error (HTTP %d): %s", resp.StatusCode, errResp.Message)
+					return "", fmt.Errorf("llm error (HTTP %d): %s", resp.StatusCode, errResp.Message)
 				}
 			}
-			return "", fmt.Errorf("openrouter error (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
+			return "", fmt.Errorf("llm error (HTTP %d): %s", resp.StatusCode, strings.TrimSpace(string(body)))
 		}
 		var response ChatResponse
 		if err := json.Unmarshal(body, &response); err != nil {

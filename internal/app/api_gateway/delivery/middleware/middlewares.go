@@ -39,7 +39,7 @@ func PanicMiddleware(next http.Handler) http.Handler {
 		log := logger.GetLogger()
 		defer func() {
 			if err := recover(); err != nil {
-				requestId, ok := r.Context().Value("request_id").(string)
+				requestId, ok := r.Context().Value(context_helper.ContextKeyRequestId).(string)
 				if !ok {
 					log.Error("[panic middleware] panic",
 						zap.Any("err", err))

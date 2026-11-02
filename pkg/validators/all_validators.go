@@ -16,7 +16,6 @@ func validatePassword(passwordStr string) error {
 	hasLower := false
 	hasUpper := false
 	hasDigit := false
-	hasInvalid := false
 	for i := range len(password) {
 		switch {
 		case 'A' <= password[i] && password[i] <= 'Z':
@@ -25,8 +24,6 @@ func validatePassword(passwordStr string) error {
 			hasLower = true
 		case '0' <= password[i] && password[i] <= '9':
 			hasDigit = true
-		default:
-			hasInvalid = true
 		}
 	}
 	if !hasUpper {
@@ -37,9 +34,6 @@ func validatePassword(passwordStr string) error {
 	}
 	if !hasDigit {
 		return ErrPasswordDoNotContainsDigits
-	}
-	if hasInvalid {
-		return ErrPasswordContainsInvalidCharacters
 	}
 	return nil
 }

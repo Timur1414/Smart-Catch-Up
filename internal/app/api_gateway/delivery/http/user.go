@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
+	"slices"
 
 	fileserverpb "github.com/Timur1414/Smart-Catch-Up/api/proto/file_server"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
@@ -154,6 +155,15 @@ func (obj *UserHandler) UpdateProfileAvatar(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		log.Error("Failed to read file bytes", zap.Error(err))
 		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	contentExt := http.DetectContentType(fileBytes)
+	allowedContentExt := []string{"image/jpeg", "image/png", "image/webp"}
+	if !slices.Contains(allowedContentExt, contentExt) {
+		response := web_helpers.NewValidationErrorResponse(requestId, []web_helpers.ValidationError{
+			web_helpers.NewValidationError("avatar", "Расширение не поддерживается"),
+		})
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}

@@ -3,12 +3,11 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"regexp"
 	"strings"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/domain"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/llm"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	"github.com/Timur1414/Smart-Catch-Up/pkg/openrouter"
 	"go.uber.org/zap"
 )
 
@@ -19,18 +18,14 @@ type TextGeneratorStrategy interface {
 type LLMTextGeneratorStrategy struct {
 	notifications []domain.Notification
 	cluster       string
-	llmClient     openrouter.LlmClient
-	linkRegex     *regexp.Regexp
-	markdownLink  *regexp.Regexp
+	llmClient     llm.LlmClient
 }
 
-func NewBaseTextGeneratorStrategy(notifications []domain.Notification, cluster string, client openrouter.LlmClient) *LLMTextGeneratorStrategy {
+func NewBaseTextGeneratorStrategy(notifications []domain.Notification, cluster string, client llm.LlmClient) *LLMTextGeneratorStrategy {
 	return &LLMTextGeneratorStrategy{
 		notifications: notifications,
 		cluster:       cluster,
 		llmClient:     client,
-		linkRegex:     regexp.MustCompile(`(?i)\b(https?://|ftp://|www\.)\S+|(\b[a-z0-9.-]+\.[a-z]{2,}(/[^\s<>]*)?)`),
-		markdownLink:  regexp.MustCompile(`\[([^]]+)]\(([^)]+)\)`),
 	}
 }
 

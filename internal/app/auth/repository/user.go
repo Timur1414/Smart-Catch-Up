@@ -35,82 +35,85 @@ func NewUserPostgres(db *pgxpool.Pool) *UserPostgres {
 }
 
 func (obj *UserPostgres) Create(ctx context.Context, user domain.User) (int, error) {
-	log := logger.GetLoggerWithRequestId(ctx)
-	query := `insert into "user"(email, password) values ($1, $2) returning id;`
-	args := []any{user.Email, user.Password}
-	var id int
-	start := time.Now()
-	err := obj.db.QueryRow(ctx, query, args...).Scan(&id)
-	duration := time.Since(start)
-	pgErr, ok := errors.AsType[*pgconn.PgError](err)
-	if ok {
-		log.Error("failed to create user (db error)", zap.Error(pgErr))
-		switch pgErr.Code {
-		case pgerrcode.UniqueViolation:
-			return -1, domain.ErrUserAlreadyExists
-		case pgerrcode.CheckViolation:
-			return -1, domain.ErrDuplicatedData
-		default:
-			return -1, pgErr
+	id := -1
+	err := pgx.BeginFunc(ctx, obj.db, func(tx pgx.Tx) error {
+		log := logger.GetLoggerWithRequestId(ctx)
+		query := `insert into "user"(email, password) values ($1, $2) returning id;`
+		args := []any{user.Email, user.Password}
+		start := time.Now()
+		err := tx.QueryRow(ctx, query, args...).Scan(&id)
+		duration := time.Since(start)
+		pgErr, ok := errors.AsType[*pgconn.PgError](err)
+		if ok {
+			log.Error("failed to create user (db error)", zap.Error(pgErr))
+			switch pgErr.Code {
+			case pgerrcode.UniqueViolation:
+				return domain.ErrUserAlreadyExists
+			case pgerrcode.CheckViolation:
+				return domain.ErrDuplicatedData
+			default:
+				return pgErr
+			}
 		}
-	}
-	if err != nil {
-		log.Error("failed to create user (not db error)", zap.Error(err))
-		return -1, err
-	}
-	log = logger.ModifyLoggerWithDBQuery(log, query, []any{}, duration)
-	log.Info("Query executed")
+		if err != nil {
+			log.Error("failed to create user (not db error)", zap.Error(err))
+			return err
+		}
+		log = logger.ModifyLoggerWithDBQuery(log, query, []any{}, duration)
+		log.Info("Query executed")
 
-	log = logger.GetLoggerWithRequestId(ctx)
-	query = `insert into settings(user_id, first_name, last_name) values ($1, $2, $3);`
-	args = []any{id, "", ""}
-	start = time.Now()
-	_, err = obj.db.Exec(ctx, query, args...)
-	duration = time.Since(start)
-	pgErr, ok = errors.AsType[*pgconn.PgError](err)
-	if ok {
-		log.Error("failed to create settings (db error)", zap.Error(pgErr))
-		switch pgErr.Code {
-		case pgerrcode.UniqueViolation:
-			return -1, domain.ErrSettingsAlreadyExists
-		case pgerrcode.CheckViolation:
-			return -1, domain.ErrDuplicatedData
-		default:
-			return -1, pgErr
+		log = logger.GetLoggerWithRequestId(ctx)
+		query = `insert into settings(user_id, first_name, last_name) values ($1, $2, $3);`
+		args = []any{id, "", ""}
+		start = time.Now()
+		_, err = tx.Exec(ctx, query, args...)
+		duration = time.Since(start)
+		pgErr, ok = errors.AsType[*pgconn.PgError](err)
+		if ok {
+			log.Error("failed to create settings (db error)", zap.Error(pgErr))
+			switch pgErr.Code {
+			case pgerrcode.UniqueViolation:
+				return domain.ErrSettingsAlreadyExists
+			case pgerrcode.CheckViolation:
+				return domain.ErrDuplicatedData
+			default:
+				return pgErr
+			}
 		}
-	}
-	if err != nil {
-		log.Error("failed to create settings (not db error)", zap.Error(err))
-		return -1, err
-	}
-	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
-	log.Info("Query executed")
+		if err != nil {
+			log.Error("failed to create settings (not db error)", zap.Error(err))
+			return err
+		}
+		log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+		log.Info("Query executed")
 
-	log = logger.GetLoggerWithRequestId(ctx)
-	query = `insert into digest(user_id) values ($1);`
-	args = []any{id, "", ""}
-	start = time.Now()
-	_, err = obj.db.Exec(ctx, query, args...)
-	duration = time.Since(start)
-	pgErr, ok = errors.AsType[*pgconn.PgError](err)
-	if ok {
-		log.Error("failed to create digest (db error)", zap.Error(pgErr))
-		switch pgErr.Code {
-		case pgerrcode.UniqueViolation:
-			return -1, domain.ErrDigestAlreadyExists
-		case pgerrcode.CheckViolation:
-			return -1, domain.ErrDuplicatedData
-		default:
-			return -1, pgErr
+		log = logger.GetLoggerWithRequestId(ctx)
+		query = `insert into digest(user_id) values ($1);`
+		args = []any{id}
+		start = time.Now()
+		_, err = tx.Exec(ctx, query, args...)
+		duration = time.Since(start)
+		pgErr, ok = errors.AsType[*pgconn.PgError](err)
+		if ok {
+			log.Error("failed to create digest (db error)", zap.Error(pgErr))
+			switch pgErr.Code {
+			case pgerrcode.UniqueViolation:
+				return domain.ErrDigestAlreadyExists
+			case pgerrcode.CheckViolation:
+				return domain.ErrDuplicatedData
+			default:
+				return pgErr
+			}
 		}
-	}
-	if err != nil {
-		log.Error("failed to create digest (not db error)", zap.Error(err))
-		return -1, err
-	}
-	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
-	log.Info("Query executed")
-	return id, nil
+		if err != nil {
+			log.Error("failed to create digest (not db error)", zap.Error(err))
+			return err
+		}
+		log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
+		log.Info("Query executed")
+		return nil
+	})
+	return id, err
 }
 
 func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, error) {

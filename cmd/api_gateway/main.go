@@ -166,8 +166,8 @@ func main() {
 	handler := middleware.CSRFMiddleware(mux, csrfServer)
 	handler = middleware.AuthMiddleware(handler, authClient)
 	handler = middleware.CORSMiddleware(handler)
-	handler = middleware.AccessLogMiddleware(handler)
 	handler = middleware.PanicMiddleware(handler)
+	handler = middleware.AccessLogMiddleware(handler)
 
 	addr := ":" + os.Getenv("PORT")
 	server := http.Server{

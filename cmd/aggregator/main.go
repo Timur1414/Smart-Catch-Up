@@ -11,8 +11,8 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/llm"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	"github.com/Timur1414/Smart-Catch-Up/pkg/openrouter"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
@@ -103,7 +103,7 @@ func main() {
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
-	openRouterClient, err := openrouter.NewClient(
+	openRouterClient, err := llm.NewClient(
 		os.Getenv("OPENROUTER_API_KEY"),
 		os.Getenv("OPENROUTER_BASE_URL"),
 		os.Getenv("OPENROUTER_MODEL"),

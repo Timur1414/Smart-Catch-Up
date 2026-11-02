@@ -3,13 +3,12 @@ package validators
 import "errors"
 
 var (
-	ErrPasswordTooShort                  = errors.New("password must be at least 8 characters")
-	ErrPasswordTooLong                   = errors.New("password must be less than 72 characters")
-	ErrPasswordDoNotContainsUppercase    = errors.New("password must contain uppercase letters")
-	ErrPasswordDoNotContainsLowercase    = errors.New("password must contain lowercase letters")
-	ErrPasswordDoNotContainsDigits       = errors.New("password must contain digits")
-	ErrPasswordContainsInvalidCharacters = errors.New("password contain invalid characters")
-	ErrPasswordsNotEqual                 = errors.New("passwords not equal")
+	ErrPasswordTooShort               = errors.New("password must be at least 8 characters")
+	ErrPasswordTooLong                = errors.New("password must be less than 72 characters")
+	ErrPasswordDoNotContainsUppercase = errors.New("password must contain uppercase letters")
+	ErrPasswordDoNotContainsLowercase = errors.New("password must contain lowercase letters")
+	ErrPasswordDoNotContainsDigits    = errors.New("password must contain digits")
+	ErrPasswordsNotEqual              = errors.New("passwords not equal")
 )
 
 var (

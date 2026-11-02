@@ -12,8 +12,8 @@ import (
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/repository"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/llm"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	"github.com/Timur1414/Smart-Catch-Up/pkg/openrouter"
 	"go.uber.org/zap"
 )
 
@@ -28,10 +28,10 @@ type Block struct {
 	notificationRepo repository.NotificationRepository
 	digestRepo       repository.DigestRepository
 	settingsRepo     repository.SettingsRepository
-	client           openrouter.LlmClient
+	client           llm.LlmClient
 }
 
-func NewBlock(repository repository.BlockRepository, notifRepo repository.NotificationRepository, digestRepo repository.DigestRepository, settingsRepo repository.SettingsRepository, client openrouter.LlmClient) *Block {
+func NewBlock(repository repository.BlockRepository, notifRepo repository.NotificationRepository, digestRepo repository.DigestRepository, settingsRepo repository.SettingsRepository, client llm.LlmClient) *Block {
 	return &Block{
 		repository:       repository,
 		notificationRepo: notifRepo,
@@ -281,10 +281,10 @@ func NormalizeNotification(notification domain.Notification) string {
 		notification.Payload = strings.ReplaceAll(notification.Payload, "</notification>", "")
 	}
 	for strings.Contains(notification.ActorName, "<notification>") {
-		notification.ActorName = strings.ReplaceAll(notification.Payload, "<notification>", "")
+		notification.ActorName = strings.ReplaceAll(notification.ActorName, "<notification>", "")
 	}
 	for strings.Contains(notification.ActorName, "</notification>") {
-		notification.ActorName = strings.ReplaceAll(notification.Payload, "</notification>", "")
+		notification.ActorName = strings.ReplaceAll(notification.ActorName, "</notification>", "")
 	}
 	return fmt.Sprintf("<notification><id>%d</id><type>%s</type><actor>%s</actor><payload>%s</payload></notification>", notification.Id, notification.NotificationType, notification.ActorName, notification.Payload)
 }

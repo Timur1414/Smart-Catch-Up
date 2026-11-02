@@ -47,7 +47,7 @@ from notification N left join public.notification_action NA on N.id = NA.notific
 	defer rows.Close()
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	res := make([]domain.Notification, 0)
-	resMap := make(map[int]*domain.Notification)
+	resMap := make(map[int]int)
 	for rows.Next() {
 		notification := domain.Notification{RecipientId: userId}
 		var cluster pgtype.Text
@@ -65,18 +65,18 @@ from notification N left join public.notification_action NA on N.id = NA.notific
 		if readAt.Valid {
 			notification.ReadAt = readAt.Time
 		}
-		foundNotification, exists := resMap[notification.Id]
+		foundNotificationIndex, exists := resMap[notification.Id]
 		if !exists {
 			res = append(res, notification)
-			foundNotification = &res[len(res)-1]
-			resMap[notification.Id] = &notification
+			foundNotificationIndex = len(res) - 1
+			resMap[notification.Id] = foundNotificationIndex
 		}
 		if actionType != nil && actionTarget != nil {
 			action := domain.NotificationAction{
 				ActionType:   *actionType,
 				ActionTarget: *actionTarget,
 			}
-			foundNotification.Actions = append(foundNotification.Actions, action)
+			res[foundNotificationIndex].Actions = append(res[foundNotificationIndex].Actions, action)
 		}
 	}
 	log.Info("Query executed")
@@ -103,7 +103,7 @@ from notification N left join public.notification_action NA on N.id = NA.notific
 	defer rows.Close()
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	res := make([]domain.Notification, 0)
-	resMap := make(map[int]*domain.Notification)
+	resMap := make(map[int]int)
 	for rows.Next() {
 		notification := domain.Notification{RecipientId: userId}
 		var cluster pgtype.Text
@@ -121,18 +121,18 @@ from notification N left join public.notification_action NA on N.id = NA.notific
 		if readAt.Valid {
 			notification.ReadAt = readAt.Time
 		}
-		foundNotification, exists := resMap[notification.Id]
+		foundNotificationIndex, exists := resMap[notification.Id]
 		if !exists {
 			res = append(res, notification)
-			foundNotification = &res[len(res)-1]
-			resMap[notification.Id] = &notification
+			foundNotificationIndex = len(res) - 1
+			resMap[notification.Id] = foundNotificationIndex
 		}
 		if actionType != nil && actionTarget != nil {
 			action := domain.NotificationAction{
 				ActionType:   *actionType,
 				ActionTarget: *actionTarget,
 			}
-			foundNotification.Actions = append(foundNotification.Actions, action)
+			res[foundNotificationIndex].Actions = append(res[foundNotificationIndex].Actions, action)
 		}
 	}
 	log.Info("Query executed")
