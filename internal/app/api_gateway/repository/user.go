@@ -17,7 +17,7 @@ import (
 
 type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
-	GetAllIds(ctx context.Context) ([]int, error)
+	IsUserIdsExists(ctx context.Context, ids []int) (bool, error)
 	GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error)
 	Update(ctx context.Context, user domain.User) error
 }
@@ -60,19 +60,19 @@ func (obj *UserPostgres) GetById(ctx context.Context, id int) (domain.User, erro
 	return res, nil
 }
 
-func (obj *UserPostgres) GetAllIds(ctx context.Context) ([]int, error) {
+func (obj *UserPostgres) IsUserIdsExists(ctx context.Context, ids []int) (bool, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select id from "user" where active = true;`
-	var args []any
+	query := `select id from "user" where id = any($1) and active = true;`
+	args := []any{ids}
 	res := make([]int, 0)
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
 	if err != nil {
 		log.Error("failed to get all users ids", zap.Error(err))
 		if errors.Is(err, pgx.ErrNoRows) {
-			return []int{}, domain.ErrNothingInTable
+			return false, domain.ErrNothingInTable
 		}
-		return []int{}, err
+		return false, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -80,14 +80,14 @@ func (obj *UserPostgres) GetAllIds(ctx context.Context) ([]int, error) {
 		err = rows.Scan(&id)
 		if err != nil {
 			log.Error("failed to get all users ids", zap.Error(err))
-			return []int{}, err
+			return false, err
 		}
 		res = append(res, id)
 	}
 	duration := time.Since(start)
 	log = logger.ModifyLoggerWithDBQuery(log, query, args, duration)
 	log.Info("Query executed")
-	return res, nil
+	return len(ids) == len(res), nil
 }
 
 func (obj *UserPostgres) GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error) {

@@ -1,7 +1,6 @@
 package http
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
@@ -10,7 +9,7 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/validators"
-	web_helpers2 "github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
 	"go.uber.org/zap"
 )
 
@@ -42,21 +41,27 @@ func (obj *AdminHandler) Generate1(w http.ResponseWriter, r *http.Request) {
 	}()
 	if err != nil {
 		log.Error("failed to parse request", zap.Error(err))
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	allowedTypes, allowedUsers, err := getAllowedAdminData(r.Context(), obj.notificationUsecase, obj.userUsecase)
+	allowedTypes, err := obj.notificationUsecase.GetAllTypes(r.Context())
 	if err != nil {
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	errors := validators.ValidateGenerate1(request.Text, request.NotificationType, request.UserId, allowedTypes, allowedUsers)
+	exists, err := obj.userUsecase.IsUserIdsExists(r.Context(), []int{request.UserId})
+	if err != nil || !exists {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	errors := validators.ValidateGenerate1(request.Text, request.NotificationType, request.UserId, allowedTypes)
 	if len(errors) > 0 {
 		log.Warn("validation errors", zap.Any("errors", errors))
-		response := web_helpers2.NewValidationErrorResponse(requestId, errors)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewValidationErrorResponse(requestId, errors)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	generatorResponse, err := obj.generatorServer.Generate1(r.Context(), &generatorpb.Generate1Request{
@@ -65,12 +70,12 @@ func (obj *AdminHandler) Generate1(w http.ResponseWriter, r *http.Request) {
 		UserId:           int64(request.UserId),
 	})
 	if err != nil || !generatorResponse.GetStatus() {
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	response := web_helpers2.NewOkResponse()
-	web_helpers2.WriteResponseJSON(w, response.Code, response)
+	response := web_helpers.NewOkResponse()
+	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
 
 func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
@@ -87,25 +92,31 @@ func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
 	}()
 	if err != nil {
 		log.Error("failed to parse request", zap.Error(err))
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	userIds := make([]int64, len(request.UserIds))
 	for i, userId := range request.UserIds {
 		userIds[i] = int64(userId)
 	}
-	allowedTypes, allowedUsers, err := getAllowedAdminData(r.Context(), obj.notificationUsecase, obj.userUsecase)
+	allowedTypes, err := obj.notificationUsecase.GetAllTypes(r.Context())
 	if err != nil {
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	errors := validators.ValidateGenerateN(request.Number, request.NotificationTypes, request.UserIds, allowedTypes, allowedUsers)
+	exists, err := obj.userUsecase.IsUserIdsExists(r.Context(), request.UserIds)
+	if err != nil || !exists {
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	errors := validators.ValidateGenerateN(request.Number, request.NotificationTypes, request.UserIds, allowedTypes)
 	if len(errors) > 0 {
 		log.Warn("validation errors", zap.Any("errors", errors))
-		response := web_helpers2.NewValidationErrorResponse(requestId, errors)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewValidationErrorResponse(requestId, errors)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
 	generatorResponse, err := obj.generatorServer.GenerateN(r.Context(), &generatorpb.GenerateNRequest{
@@ -114,23 +125,10 @@ func (obj *AdminHandler) GenerateN(w http.ResponseWriter, r *http.Request) {
 		UserIds:           userIds,
 	})
 	if err != nil || !generatorResponse.GetStatus() {
-		response := web_helpers2.NewServerErrorResponse(requestId)
-		web_helpers2.WriteResponseJSON(w, response.Code, response)
+		response := web_helpers.NewServerErrorResponse(requestId)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	response := web_helpers2.NewOkResponse()
-	web_helpers2.WriteResponseJSON(w, response.Code, response)
-}
-
-func getAllowedAdminData(ctx context.Context, notificationUsecase usecase.NotificationUseCase, userUsecase usecase.UserUseCase) ([]string, []int, error) {
-	// ToDo switch to db query: SELECT id FROM "user" WHERE id = ANY($1) AND active = true; and compare len(ids) == len(found_ids)
-	allowedTypes, err := notificationUsecase.GetAllTypes(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	allowedUsers, err := userUsecase.GetAllIds(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-	return allowedTypes, allowedUsers, nil
+	response := web_helpers.NewOkResponse()
+	web_helpers.WriteResponseJSON(w, response.Code, response)
 }

@@ -9,7 +9,7 @@ import (
 
 type UserUseCase interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
-	GetAllIds(ctx context.Context) ([]int, error)
+	IsUserIdsExists(ctx context.Context, ids []int) (bool, error)
 	GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error)
 	Update(ctx context.Context, user domain.User) error
 }
@@ -32,8 +32,8 @@ func (obj *User) GetById(ctx context.Context, id int) (domain.User, error) {
 	return obj.repository.GetById(ctx, id)
 }
 
-func (obj *User) GetAllIds(ctx context.Context) ([]int, error) {
-	return obj.repository.GetAllIds(ctx)
+func (obj *User) IsUserIdsExists(ctx context.Context, ids []int) (bool, error) {
+	return obj.repository.IsUserIdsExists(ctx, ids)
 }
 
 func (obj *User) GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error) {
