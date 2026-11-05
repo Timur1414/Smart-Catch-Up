@@ -211,7 +211,9 @@ func (obj *UserHandler) GetAllowedIds(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Get allowed user ids request")
 	requestId := context_helper.GetRequestIdFromContext(r.Context())
-	users, settings, err := obj.userUsecase.GetAllShortUsers(r.Context())
+	query := r.URL.Query()
+	searchText := query.Get("search")
+	users, settings, err := obj.userUsecase.GetAllShortUsers(r.Context(), searchText)
 	if err != nil {
 		response := web_helpers.NewServerErrorResponse(requestId)
 		web_helpers.WriteResponseJSON(w, response.Code, response)

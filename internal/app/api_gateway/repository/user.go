@@ -18,7 +18,7 @@ import (
 type UserRepository interface {
 	GetById(ctx context.Context, id int) (domain.User, error)
 	IsUserIdsExists(ctx context.Context, ids []int) (bool, error)
-	GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error)
+	GetAllShortUsers(ctx context.Context, searchText string) ([]domain.User, []domain.Settings, error)
 	Update(ctx context.Context, user domain.User) error
 }
 
@@ -90,10 +90,10 @@ func (obj *UserPostgres) IsUserIdsExists(ctx context.Context, ids []int) (bool, 
 	return len(ids) == len(res), nil
 }
 
-func (obj *UserPostgres) GetAllShortUsers(ctx context.Context) ([]domain.User, []domain.Settings, error) {
+func (obj *UserPostgres) GetAllShortUsers(ctx context.Context, searchText string) ([]domain.User, []domain.Settings, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	query := `select U.id, S.first_name, S.last_name from "user" U join settings S on U.id = S.user_id where U.active = true;`
-	var args []any
+	query := `select U.id, S.first_name, S.last_name from "user" U join settings S on U.id = S.user_id where U.active = true and (S.first_name ilike $1 or S.last_name ilike $1);`
+	args := []any{"%" + searchText + "%"}
 	resUsers := make([]domain.User, 0)
 	resSettings := make([]domain.Settings, 0)
 	start := time.Now()
