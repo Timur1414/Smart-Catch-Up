@@ -169,6 +169,38 @@ func main() {
 	handler = middleware.PanicMiddleware(handler)
 	handler = middleware.AccessLogMiddleware(handler)
 
+	//    webMux := http.NewServeMux()
+	//    webMux.HandleFunc("GET /api/profile", userHandler.GetProfile)
+	//    webMux.HandleFunc("GET /api/digest", digestHandler.Get)
+	//    webMux.HandleFunc("GET /api/notifications", notificationsHandler.Get)
+	//    webHandler := middleware.CSRFMiddleware(webMux, csrfServer)
+	//    webHandler = middleware.CookieAuthMiddleware(webHandler, authClient)
+	//    webHandler = middleware.WebCORSMiddleware(webHandler)
+	//
+	//    extMux := http.NewServeMux()
+	//    extMux.HandleFunc("GET /api/ext/popup", extensionHandler.GetPopupData) // Всё для попапа за 1 запрос
+	//    extMux.HandleFunc("GET /api/ext/badge", extensionHandler.GetBadgeCount) // Только цифра для иконки
+	//    extHandler := middleware.BearerAuthMiddleware(extMux, authClient)
+	//    extHandler = middleware.ExtCORSMiddleware(extHandler)
+	//
+	//    rootMux := http.NewServeMux()
+	//
+	//    rootMux.HandleFunc("POST /auth/login", authHandler.Login)
+	//    rootMux.HandleFunc("POST /auth/refresh", authHandler.Refresh)
+	//    rootMux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
+	//
+	//    rootMux.Handle("/api/ext/", extHandler)
+	//    rootMux.Handle("/api/", webHandler)
+	//
+	//    finalHandler := middleware.PanicMiddleware(rootMux)
+	//    finalHandler = middleware.AccessLogMiddleware(finalHandler)
+	//
+	//    server := http.Server{
+	//        Addr:    ":" + os.Getenv("PORT"),
+	//        Handler: finalHandler,
+	//    }
+	//    server.ListenAndServe()
+
 	addr := ":" + os.Getenv("PORT")
 	server := http.Server{
 		Addr:         addr,
