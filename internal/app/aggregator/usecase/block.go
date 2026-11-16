@@ -29,15 +29,17 @@ type Block struct {
 	digestRepo       repository.DigestRepository
 	settingsRepo     repository.SettingsRepository
 	client           llm.LlmClient
+	cache            repository.CacheRepository
 }
 
-func NewBlock(repository repository.BlockRepository, notifRepo repository.NotificationRepository, digestRepo repository.DigestRepository, settingsRepo repository.SettingsRepository, client llm.LlmClient) *Block {
+func NewBlock(repository repository.BlockRepository, notifRepo repository.NotificationRepository, digestRepo repository.DigestRepository, settingsRepo repository.SettingsRepository, client llm.LlmClient, cache repository.CacheRepository) *Block {
 	return &Block{
 		repository:       repository,
 		notificationRepo: notifRepo,
 		digestRepo:       digestRepo,
 		settingsRepo:     settingsRepo,
 		client:           client,
+		cache:            cache,
 	}
 }
 
@@ -155,6 +157,11 @@ func (obj *Block) Aggregate(ctx context.Context, startUserID, endUserID int) err
 			return err
 		}
 		log.Info("Successfully updated digest")
+		err = obj.cache.Add(ctx, block.UserId, block)
+		if err != nil {
+			return err
+		}
+		log.Info("Digest cached")
 	}
 	aggregationDuration := time.Since(aggregationStart)
 	if !hasGeneratorErrors {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/usecase"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/cache"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/llm"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
@@ -103,6 +104,19 @@ func main() {
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
+	redisAddr := fmt.Sprintf("redis://:%s@%s:%s/0", os.Getenv("REDIS_PASSWORD"), os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
+	redisClient, err := cache.New(ctx, redisAddr)
+	if err != nil {
+		log.Fatal("Failed to connect to redis", zap.Error(err))
+	}
+	defer func() {
+		err = redisClient.Close()
+		if err != nil {
+			log.Fatal("Failed to close redis connection", zap.Error(err))
+		}
+	}()
+	log.Info("Connected to Redis")
+
 	openRouterClient, err := llm.NewClient(
 		os.Getenv("OPENROUTER_API_KEY"),
 		os.Getenv("OPENROUTER_BASE_URL"),
@@ -119,8 +133,9 @@ func main() {
 	digestRepo := repository.NewDigestPostgres(dbPool)
 	userRepo := repository.NewUserPostgres(dbPool)
 	settingsRepo := repository.NewSettingsPostgres(dbPool)
+	cacheRepo := repository.NewCacheRedis(redisClient)
 	log.Info("Repository initialized")
-	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo, settingsRepo, openRouterClient)
+	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo, settingsRepo, openRouterClient, cacheRepo)
 	log.Info("Usecase initialized")
 
 	batchSize := 500
