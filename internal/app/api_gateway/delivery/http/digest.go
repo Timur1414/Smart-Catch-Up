@@ -8,12 +8,15 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
+	"go.uber.org/zap"
 )
 
 type DigestHandler struct {
 	usecase      usecase.DigestUseCase
 	blockUsecase usecase.BlockUseCase
 }
+
+const importantType = "important"
 
 func NewDigestHandler(usecase usecase.DigestUseCase, blockUsecase usecase.BlockUseCase) *DigestHandler {
 	return &DigestHandler{
@@ -34,6 +37,29 @@ func (obj *DigestHandler) Get(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
+	cachedDigest, err := obj.usecase.GetFromCache(r.Context(), user)
+	if err == nil {
+		importantBlocks := make([]domain.BlockPart, 0)
+		baseBlocks := make([]domain.BlockPart, 0)
+		for _, part := range cachedDigest.Categories {
+			blockPart := domain.BlockPart{
+				ClusterType: part.ClusterType,
+				Text:        part.Text,
+				Start:       part.Start,
+				End:         part.End,
+				Rank:        part.Rank,
+			}
+			if part.ClusterType == importantType {
+				importantBlocks = append(importantBlocks, blockPart)
+			} else {
+				baseBlocks = append(baseBlocks, blockPart)
+			}
+		}
+		response := NewDigestResponse(requestId, digest, importantBlocks, baseBlocks)
+		web_helpers.WriteResponseJSON(w, response.Code, response)
+		return
+	}
+	log.Warn("Cache miss")
 	if digest.BlockId == 0 {
 		response := NewDigestResponse(requestId, digest, []domain.BlockPart{}, []domain.BlockPart{})
 		web_helpers.WriteResponseJSON(w, response.Code, response)
@@ -56,4 +82,8 @@ func (obj *DigestHandler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	response := NewDigestResponse(requestId, digest, importantBlocks, baseBlocks)
 	web_helpers.WriteResponseJSON(w, response.Code, response)
+	err = obj.usecase.UpdateCache(r.Context(), user, block)
+	if err != nil {
+		log.Warn("failed to update cache", zap.Error(err))
+	}
 }

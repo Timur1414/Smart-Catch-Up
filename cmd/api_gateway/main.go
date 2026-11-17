@@ -16,6 +16,7 @@ import (
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/secure/csrf"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
+	"github.com/Timur1414/Smart-Catch-Up/pkg/cache"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/joho/godotenv"
@@ -75,6 +76,19 @@ func main() {
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
+	redisAddr := fmt.Sprintf("redis://:%s@%s:%s/0", os.Getenv("REDIS_PASSWORD"), os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
+	redisClient, err := cache.New(ctx, redisAddr)
+	if err != nil {
+		log.Fatal("Failed to connect to redis", zap.Error(err))
+	}
+	defer func() {
+		err = redisClient.Close()
+		if err != nil {
+			log.Fatal("Failed to close redis connection", zap.Error(err))
+		}
+	}()
+	log.Info("Connected to Redis")
+
 	authConn, err := grpc.NewClient(
 		"auth:50051",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -119,11 +133,12 @@ func main() {
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
 	digestRepo := repository.NewDigestPostgres(dbPool)
 	blockRepo := repository.NewBlockPostgres(dbPool)
+	cacheRepo := repository.NewCacheRedis(redisClient)
 	log.Info("Repository initialized")
 	userUseCase := usecase.NewUser(userRepo)
 	settingsUseCase := usecase.NewSettings(settingsRepo)
 	notificationUseCase := usecase.NewNotification(notificationRepo)
-	digestUseCase := usecase.NewDigest(digestRepo)
+	digestUseCase := usecase.NewDigest(digestRepo, cacheRepo)
 	blockUseCase := usecase.NewBlock(blockRepo)
 	log.Info("UseCase initialized")
 	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase, fileserverClient, notificationUseCase)

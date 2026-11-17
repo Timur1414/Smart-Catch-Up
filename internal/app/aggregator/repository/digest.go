@@ -21,8 +21,10 @@ type CacheRepository interface {
 	Add(ctx context.Context, userId int, block domain.Block) error
 }
 
-const cacheTTL = 24 * time.Hour
-const cachePrefix = "cache:digest:"
+const (
+	cacheTTL    = 24 * time.Hour
+	cachePrefix = "cache:digest:"
+)
 
 type DigestPostgres struct {
 	db *pgxpool.Pool
