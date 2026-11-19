@@ -143,6 +143,7 @@ func main() {
 	log.Info("UseCase initialized")
 	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase, fileserverClient, notificationUseCase)
 	digestHandler := delivery.NewDigestHandler(digestUseCase, blockUseCase)
+	digestExtensionHandler := delivery.NewDigestExtensionHandler(digestUseCase, blockUseCase)
 	adminHandler := delivery.NewAdminHandler(generatorClient, userUseCase, notificationUseCase)
 	authHandler := delivery.NewAuthHandler(authClient)
 	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
@@ -154,72 +155,50 @@ func main() {
 		return
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+	webMux := http.NewServeMux()
+	webMux.HandleFunc("POST /auth/login", authHandler.Login)
+	webMux.HandleFunc("POST /auth/login/2fa", authHandler.Login2FA)
+	webMux.HandleFunc("POST /auth/refresh", authHandler.Refresh)
+	webMux.HandleFunc("POST /auth/register", authHandler.Register)
+	webMux.HandleFunc("POST /auth/logout", authHandler.Logout)
+	webMux.HandleFunc("GET /api/profile", userHandler.GetProfile)
+	webMux.HandleFunc("POST /api/profile", userHandler.UpdateProfile)
+	webMux.HandleFunc("POST /api/profile/avatar", userHandler.UpdateProfileAvatar)
+	webMux.HandleFunc("POST /api/profile/2fa/setup", authHandler.Setup2FA)
+	webMux.HandleFunc("POST /api/profile/2fa/enable", authHandler.Enable2FA)
+	webMux.HandleFunc("POST /api/profile/2fa/disable", authHandler.Disable2FA)
+	webMux.HandleFunc("GET /api/is_staff", userHandler.IsStaff)
+	webMux.HandleFunc("GET /api/digest", digestHandler.Get)
+	webMux.HandleFunc("GET /api/notifications", notificationsHandler.Get)
+	webMux.HandleFunc("GET /api/notifications/all", notificationsHandler.GetAll)
+	webMux.HandleFunc("POST /api/admin/generate", adminHandler.Generate1)
+	webMux.HandleFunc("POST /api/admin/generate_n", adminHandler.GenerateN)
+	webMux.HandleFunc("GET /api/users_ids", userHandler.GetAllowedIds)
+	webMux.HandleFunc("GET /api/notification_types", notificationsHandler.GetAllTypes)
+	webHandler := middleware.CSRFMiddleware(webMux, csrfServer)
+	webHandler = middleware.AuthMiddleware(webHandler, authClient)
+	webHandler = middleware.CORSMiddleware(webHandler)
+	webHandler = middleware.PanicMiddleware(webHandler)
+	webHandler = middleware.AccessLogMiddleware(webHandler)
+
+	extMux := http.NewServeMux()
+	extMux.HandleFunc("GET /api/ext/digest", digestExtensionHandler.Get)
+	extHandler := middleware.CORSMiddleware(extMux)
+
+	rootMux := http.NewServeMux()
+	rootMux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	})
-	mux.HandleFunc("POST /auth/login", authHandler.Login)
-	mux.HandleFunc("POST /auth/login/2fa", authHandler.Login2FA)
-	mux.HandleFunc("POST /auth/refresh", authHandler.Refresh)
-	mux.HandleFunc("POST /auth/register", authHandler.Register)
-	mux.HandleFunc("POST /auth/logout", authHandler.Logout)
-	mux.HandleFunc("GET /api/profile", userHandler.GetProfile)
-	mux.HandleFunc("POST /api/profile", userHandler.UpdateProfile)
-	mux.HandleFunc("POST /api/profile/avatar", userHandler.UpdateProfileAvatar)
-	mux.HandleFunc("POST /api/profile/2fa/setup", authHandler.Setup2FA)
-	mux.HandleFunc("POST /api/profile/2fa/enable", authHandler.Enable2FA)
-	mux.HandleFunc("POST /api/profile/2fa/disable", authHandler.Disable2FA)
-	mux.HandleFunc("GET /api/is_staff", userHandler.IsStaff)
-	mux.HandleFunc("GET /api/digest", digestHandler.Get)
-	mux.HandleFunc("GET /api/notifications", notificationsHandler.Get)
-	mux.HandleFunc("GET /api/notifications/all", notificationsHandler.GetAll)
-	mux.HandleFunc("POST /api/admin/generate", adminHandler.Generate1)
-	mux.HandleFunc("POST /api/admin/generate_n", adminHandler.GenerateN)
-	mux.HandleFunc("GET /api/users_ids", userHandler.GetAllowedIds)
-	mux.HandleFunc("GET /api/notification_types", notificationsHandler.GetAllTypes)
-
-	handler := middleware.CSRFMiddleware(mux, csrfServer)
-	handler = middleware.AuthMiddleware(handler, authClient)
-	handler = middleware.CORSMiddleware(handler)
-	handler = middleware.PanicMiddleware(handler)
-	handler = middleware.AccessLogMiddleware(handler)
-
-	//    webMux := http.NewServeMux()
-	//    webMux.HandleFunc("GET /api/profile", userHandler.GetProfile)
-	//    webMux.HandleFunc("GET /api/digest", digestHandler.Get)
-	//    webMux.HandleFunc("GET /api/notifications", notificationsHandler.Get)
-	//    webHandler := middleware.CSRFMiddleware(webMux, csrfServer)
-	//    webHandler = middleware.CookieAuthMiddleware(webHandler, authClient)
-	//    webHandler = middleware.WebCORSMiddleware(webHandler)
-	//
-	//    extMux := http.NewServeMux()
-	//    extMux.HandleFunc("GET /api/ext/popup", extensionHandler.GetPopupData) // Всё для попапа за 1 запрос
-	//    extMux.HandleFunc("GET /api/ext/badge", extensionHandler.GetBadgeCount) // Только цифра для иконки
-	//    extHandler := middleware.BearerAuthMiddleware(extMux, authClient)
-	//    extHandler = middleware.ExtCORSMiddleware(extHandler)
-	//
-	//    rootMux := http.NewServeMux()
-	//
-	//    rootMux.HandleFunc("POST /auth/login", authHandler.Login)
-	//    rootMux.HandleFunc("POST /auth/refresh", authHandler.Refresh)
-	//    rootMux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusNoContent) })
-	//
-	//    rootMux.Handle("/api/ext/", extHandler)
-	//    rootMux.Handle("/api/", webHandler)
-	//
-	//    finalHandler := middleware.PanicMiddleware(rootMux)
-	//    finalHandler = middleware.AccessLogMiddleware(finalHandler)
-	//
-	//    server := http.Server{
-	//        Addr:    ":" + os.Getenv("PORT"),
-	//        Handler: finalHandler,
-	//    }
-	//    server.ListenAndServe()
+	rootMux.Handle("/api/", webHandler)
+	rootMux.Handle("/auth/", webHandler)
+	rootMux.Handle("/api/ext/", extHandler)
+	rootHandler := middleware.PanicMiddleware(rootMux)
+	rootHandler = middleware.AccessLogMiddleware(rootHandler)
 
 	addr := ":" + os.Getenv("PORT")
 	server := http.Server{
 		Addr:         addr,
-		Handler:      handler,
+		Handler:      rootHandler,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 120 * time.Second,
 	}

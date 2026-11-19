@@ -114,7 +114,16 @@ func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handle
 
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", os.Getenv("FRONT_URL"))
+		origin := r.Header.Get("Origin")
+		var allowedOrigins = map[string]bool{
+			os.Getenv("FRONT_URL"):                                true,
+			"chrome-extension://aingfmhpfjccljcjmffajjhgiojakiam": true,
+			"chrome-extension://pfekhfkigjonhiheikggociceocdcdcb": true,
+		}
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Add("Vary", "Origin")
+		}
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
 		w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Origin, Cache-Control, X-Requested-With")
