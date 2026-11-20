@@ -59,9 +59,7 @@ services:
       - scu-network
 
   seed:
-    build:
-      context: .
-      dockerfile: deployments/docker/Dockerfile_seed
+    image: timur1414/scu-seed:latest
     container_name: seed
     depends_on:
       migrations:
@@ -72,13 +70,13 @@ services:
     environment:
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - scu-network
 
   fileserver:
-    build:
-      context: .
-      dockerfile: deployments/docker/Dockerfile_fileserver
+    image: timur1414/scu-fileserver:latest
     container_name: fileserver
     restart: always
     read_only: true
@@ -91,13 +89,13 @@ services:
       - ./static:/app/static
     env_file:
       - .env
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - scu-network
 
   aggregator:
-    build:
-      context: .
-      dockerfile: deployments/docker/Dockerfile_aggregator
+    image: timur1414/scu-aggregator:latest
     container_name: aggregator
     restart: always
     depends_on:
@@ -121,13 +119,13 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - scu-network
 
   generator:
-    build:
-      context: .
-      dockerfile: deployments/docker/Dockerfile_generator
+    image: timur1414/scu-generator:latest
     container_name: generator
     restart: always
     depends_on:
@@ -149,13 +147,13 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - scu-network
 
   auth:
-    build:
-      context: .
-      dockerfile: deployments/docker/Dockerfile_auth
+    image: timur1414/scu-auth:latest
     container_name: auth
     restart: always
     depends_on:
@@ -179,13 +177,13 @@ services:
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
     networks:
       - scu-network
 
   api-gateway:
-    build:
-      context: .
-      dockerfile: deployments/docker/Dockerfile_api_gateway
+    image: timur1414/scu-api-gateway:latest
     container_name: api-gateway
     restart: always
     depends_on:
@@ -221,6 +219,24 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      - scu-network
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_API_VERSION=1.44
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_POLL_INTERVAL=60
+      - REPO_USER=${DOCKERHUB_USERNAME}
+      - REPO_PASS=${DOCKERHUB_PASSWORD}
     networks:
       - scu-network
 
