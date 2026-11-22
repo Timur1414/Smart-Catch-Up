@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -117,11 +119,25 @@ func main() {
 	}()
 	log.Info("Connected to Redis")
 
+	webClient := &http.Client{}
+	if strings.Contains(os.Getenv("OPENROUTER_MODEL"), "gemini") {
+		proxyHost := os.Getenv("PROXY_HOST")
+		proxyUser := os.Getenv("PROXY_LOGIN")
+		proxyPass := os.Getenv("PROXY_PASSWORD")
+		transport := http.DefaultTransport.(*http.Transport).Clone()
+		proxyUrl := &url.URL{
+			Scheme: "socks5",
+			User:   url.UserPassword(proxyUser, proxyPass),
+			Host:   proxyHost,
+		}
+		transport.Proxy = http.ProxyURL(proxyUrl)
+		webClient.Transport = transport
+	}
 	openRouterClient, err := llm.NewClient(
 		os.Getenv("OPENROUTER_API_KEY"),
 		os.Getenv("OPENROUTER_BASE_URL"),
 		os.Getenv("OPENROUTER_MODEL"),
-		&http.Client{},
+		webClient,
 	)
 	if err != nil {
 		log.Fatal("Failed to initialize open router client", zap.Error(err))
