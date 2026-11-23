@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Timur1414/Smart-Catch-Up/pkg/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func New(ctx context.Context, connString string) (*pgxpool.Pool, error) {
-	cfg, err := pgxpool.ParseConfig(connString)
+func New(ctx context.Context, postgresCfg config.PostgresConfig) (*pgxpool.Pool, error) {
+	cfg, err := pgxpool.ParseConfig(postgresCfg.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pgx config: %w", err)
 	}

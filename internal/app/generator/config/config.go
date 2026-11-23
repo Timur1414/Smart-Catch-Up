@@ -8,6 +8,7 @@ type GeneratorConfig struct {
 }
 
 type Config struct {
-	Common    config.Common   `yaml:"common"`
-	Generator GeneratorConfig `yaml:"generator"`
+	Common    config.Common         `yaml:"common"`
+	Generator GeneratorConfig       `yaml:"generator"`
+	Postgres  config.PostgresConfig `yaml:"postgres"`
 }

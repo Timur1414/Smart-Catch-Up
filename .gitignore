@@ -162,3 +162,4 @@ $RECYCLE.BIN/
 /docker-compose.override.yaml
 /postgres-logs/*
 /static/*
+/dump.sql

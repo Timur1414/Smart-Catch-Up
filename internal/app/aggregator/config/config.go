@@ -14,6 +14,7 @@ type AggregatorConfig struct {
 }
 
 type Config struct {
-	Common     config.Common    `yaml:"common"`
-	Aggregator AggregatorConfig `yaml:"aggregator"`
+	Common     config.Common         `yaml:"common"`
+	Aggregator AggregatorConfig      `yaml:"aggregator"`
+	Postgres   config.PostgresConfig `yaml:"postgres"`
 }

@@ -8,16 +8,15 @@ import (
 )
 
 type Common struct {
-	Debug    bool           `yaml:"debug" env:"DEBUG" env-default:"false"`
-	Postgres PostgresConfig `yaml:"postgres"`
+	Debug bool `yaml:"debug" env:"DEBUG" env-default:"false"`
 }
 
 type PostgresConfig struct {
-	Host            string        `yaml:"host" env:"POSTGRES_HOST" env-required:"true"`
-	Port            string        `yaml:"port" env:"POSTGRES_PORT" env-required:"true"`
-	DBName          string        `yaml:"dbname" env:"POSTGRES_DB" env-required:"true"`
-	User            string        `yaml:"user" env:"POSTGRES_USER" env-required:"true"`
-	Password        string        `yaml:"password" env:"POSTGRES_PASSWORD" env-required:"true"`
+	Host            string        `env:"POSTGRES_HOST" env-required:"true"`
+	Port            string        `env:"POSTGRES_PORT" env-required:"true"`
+	DBName          string        `env:"POSTGRES_DB" env-required:"true"`
+	User            string        `env:"POSTGRES_USER" env-required:"true"`
+	Password        string        `env:"POSTGRES_PASSWORD" env-required:"true"`
 	SSLMode         string        `yaml:"ssl_mode" env:"POSTGRES_SSLMODE" env-default:"disable"`
 	MaxConns        int32         `yaml:"max_conns" env:"POSTGRES_MAX_CONNS" env-default:"20"`
 	MinConns        int32         `yaml:"min_conns" env:"POSTGRES_MIN_CONNS" env-default:"5"`

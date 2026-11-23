@@ -11,6 +11,7 @@ type ApiConfig struct {
 }
 
 type Config struct {
-	Common config.Common `yaml:"common"`
-	Api    ApiConfig     `yaml:"api_gateway"`
+	Common   config.Common         `yaml:"common"`
+	Api      ApiConfig             `yaml:"api_gateway"`
+	Postgres config.PostgresConfig `yaml:"postgres"`
 }

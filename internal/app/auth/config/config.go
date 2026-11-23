@@ -8,6 +8,7 @@ type AuthConfig struct {
 }
 
 type Config struct {
-	Common config.Common `yaml:"common"`
-	Auth   AuthConfig    `yaml:"auth"`
+	Common   config.Common         `yaml:"common"`
+	Auth     AuthConfig            `yaml:"auth"`
+	Postgres config.PostgresConfig `yaml:"postgres"`
 }
