@@ -11,31 +11,35 @@ import (
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
 	fileserverpb "github.com/Timur1414/Smart-Catch-Up/api/proto/file_server"
 	generatorpb "github.com/Timur1414/Smart-Catch-Up/api/proto/generator"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/config"
 	delivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/middleware"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/secure/csrf"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/cache"
+	commonConfig "github.com/Timur1414/Smart-Catch-Up/pkg/config"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	if _, err := os.Stat(".env"); err == nil {
-		err = godotenv.Load()
-		if err != nil {
-			fmt.Println("Error loading .env file:", err)
-			return
-		}
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "../../configs/config.yaml"
 	}
-	DEBUG := os.Getenv("DEBUG") == "true"
+	cfg, err := commonConfig.Load[config.Config](configPath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
-	err := logger.InitLogger(DEBUG)
+	DEBUG := cfg.Common.Debug
+
+	err = logger.InitLogger(DEBUG)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -90,7 +94,7 @@ func main() {
 	log.Info("Connected to Redis")
 
 	authConn, err := grpc.NewClient(
-		"auth:50051",
+		cfg.Api.AuthTarget,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			d := net.Dialer{Timeout: 10 * time.Second}
@@ -103,7 +107,7 @@ func main() {
 	authClient := authpb.NewAuthClient(authConn)
 
 	generatorConn, err := grpc.NewClient(
-		"generator:50052",
+		cfg.Api.GeneratorTarget,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			d := net.Dialer{Timeout: 10 * time.Second}
@@ -116,7 +120,7 @@ func main() {
 	generatorClient := generatorpb.NewGeneratorClient(generatorConn)
 
 	fileserverConn, err := grpc.NewClient(
-		"fileserver:50053",
+		cfg.Api.FileserverTarget,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			d := net.Dialer{Timeout: 10 * time.Second}
@@ -195,7 +199,7 @@ func main() {
 	rootHandler := middleware.PanicMiddleware(rootMux)
 	rootHandler = middleware.AccessLogMiddleware(rootHandler)
 
-	addr := ":" + os.Getenv("PORT")
+	addr := ":" + cfg.Api.Port
 	server := http.Server{
 		Addr:         addr,
 		Handler:      rootHandler,

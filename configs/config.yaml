@@ -1,0 +1,32 @@
+common:
+  debug: true
+  postgres:
+    ssl_mode: "disable"
+    max_conns: 50
+    min_conns: 10
+    max_conn_lifetime: "1h"
+
+aggregator:
+  log_prefix: "aggregator"
+  batch_size: 500
+  worker_count: 4
+  interval: "1m"
+
+api_gateway:
+  log_prefix: "api"
+  auth_target: "auth:50051"
+  generator_target: "generator:50052"
+  fileserver_target: "fileserver:50053"
+  port: "8080"
+
+auth:
+  log_prefix: "auth"
+  port: "50051"
+
+fileserver:
+  log_prefix: "fileserver"
+  port: "50053"
+
+generator:
+  log_prefix: "generator"
+  port: "50052"

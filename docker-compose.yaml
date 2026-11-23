@@ -87,8 +87,11 @@ services:
     volumes:
       - ./log:/app/log
       - ./static:/app/static
+      - ./configs/config.yaml:/app/configs/config.yaml:ro
     env_file:
       - .env
+    environment:
+      - CONFIG_PATH=/app/configs/config.yaml
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
@@ -112,9 +115,11 @@ services:
       - 77.88.8.8
     volumes:
       - ./log:/app/log
+      - ./configs/config.yaml:/app/configs/config.yaml:ro
     env_file:
       - .env
     environment:
+      - CONFIG_PATH=/app/configs/config.yaml
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
@@ -140,9 +145,11 @@ services:
       - "50052"
     volumes:
       - ./log:/app/log
+      - ./configs/config.yaml:/app/configs/config.yaml:ro
     env_file:
       - .env
     environment:
+      - CONFIG_PATH=/app/configs/config.yaml
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
@@ -170,9 +177,11 @@ services:
       - "50051"
     volumes:
       - ./log:/app/log
+      - ./configs/config.yaml:/app/configs/config.yaml:ro
     env_file:
       - .env
     environment:
+      - CONFIG_PATH=/app/configs/config.yaml
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis
@@ -206,9 +215,11 @@ services:
       - "8080"
     volumes:
       - ./log:/app/log
+      - ./configs/config.yaml:/app/configs/config.yaml:ro
     env_file:
       - .env
     environment:
+      - CONFIG_PATH=/app/configs/config.yaml
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - REDIS_HOST=redis

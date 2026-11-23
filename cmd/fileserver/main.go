@@ -8,26 +8,30 @@ import (
 	"time"
 
 	fileserverpb "github.com/Timur1414/Smart-Catch-Up/api/proto/file_server"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/fileserver/config"
 	fileServerDelivery "github.com/Timur1414/Smart-Catch-Up/internal/app/fileserver/delivery/grpc"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/fileserver/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/fileserver/usecase"
+	commonConfig "github.com/Timur1414/Smart-Catch-Up/pkg/config"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
 func main() {
-	if _, err := os.Stat(".env"); err == nil {
-		err = godotenv.Load()
-		if err != nil {
-			fmt.Println("Error loading .env file:", err)
-			return
-		}
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "../../configs/config.yaml"
 	}
-	DEBUG := os.Getenv("DEBUG") == "true"
+	cfg, err := commonConfig.Load[config.Config](configPath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
-	err := logger.InitLogger(DEBUG)
+	DEBUG := cfg.Common.Debug
+
+	err = logger.InitLogger(DEBUG)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -50,14 +54,11 @@ func main() {
 	log.Info("UseCase initialized")
 	fileGrpcServer := fileServerDelivery.NewFileServer(fileUsecase)
 	log.Info("FileServer gRPC server initialized")
-	grpcPort := os.Getenv("FILESERVER_GRPC_PORT")
-	if grpcPort == "" {
-		grpcPort = "50053"
-	}
-	var config net.ListenConfig
+	grpcPort := cfg.Fileserver.Port
+	var listenConfig net.ListenConfig
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	lis, err := config.Listen(ctx, "tcp", ":"+grpcPort)
+	lis, err := listenConfig.Listen(ctx, "tcp", ":"+grpcPort)
 	if err != nil {
 		log.Fatal("Failed to listen", zap.String("port", grpcPort), zap.Error(err))
 	}

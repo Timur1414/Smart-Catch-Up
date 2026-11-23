@@ -10,13 +10,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/config"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/repository"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/cache"
+	commonConfig "github.com/Timur1414/Smart-Catch-Up/pkg/config"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/database"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/llm"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
-	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
 
@@ -67,16 +68,18 @@ func RunAggregation(ctx context.Context, blockUsecase usecase.BlockUseCase, maxU
 }
 
 func main() {
-	if _, err := os.Stat(".env"); err == nil {
-		err = godotenv.Load()
-		if err != nil {
-			fmt.Println("Error loading .env file:", err)
-			return
-		}
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "../../configs/config.yaml"
 	}
-	DEBUG := os.Getenv("DEBUG") == "true"
+	cfg, err := commonConfig.Load[config.Config](configPath)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	DEBUG := cfg.Common.Debug
 
-	err := logger.InitLogger(DEBUG)
+	err = logger.InitLogger(DEBUG)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -154,9 +157,9 @@ func main() {
 	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo, settingsRepo, openRouterClient, cacheRepo)
 	log.Info("Usecase initialized")
 
-	batchSize := 500
-	workerCount := 4
-	interval := time.Minute
+	batchSize := cfg.Aggregator.BatchSize
+	workerCount := cfg.Aggregator.WorkerCount
+	interval := cfg.Aggregator.Interval
 	aggregationCtx := context.Background()
 
 	for {
