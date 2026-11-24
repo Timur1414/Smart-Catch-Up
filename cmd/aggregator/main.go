@@ -77,9 +77,8 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	DEBUG := cfg.Common.Debug
 
-	err = logger.InitLogger(DEBUG)
+	err = logger.InitLogger(cfg.Common.Debug)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -94,15 +93,14 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	dbPool, err := database.New(ctx, cfg.Postgres)
+	dbPool, err := database.New(ctx, cfg.Aggregator.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))
 	}
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
-	redisAddr := fmt.Sprintf("redis://:%s@%s:%s/0", os.Getenv("REDIS_PASSWORD"), os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
-	redisClient, err := cache.New(ctx, redisAddr)
+	redisClient, err := cache.New(ctx, cfg.Aggregator.Redis)
 	if err != nil {
 		log.Fatal("Failed to connect to redis", zap.Error(err))
 	}
@@ -116,24 +114,16 @@ func main() {
 
 	webClient := &http.Client{}
 	if strings.Contains(os.Getenv("OPENROUTER_MODEL"), "gemini") {
-		proxyHost := os.Getenv("PROXY_HOST")
-		proxyUser := os.Getenv("PROXY_LOGIN")
-		proxyPass := os.Getenv("PROXY_PASSWORD")
 		transport := http.DefaultTransport.(*http.Transport).Clone()
 		proxyUrl := &url.URL{
-			Scheme: "socks5",
-			User:   url.UserPassword(proxyUser, proxyPass),
-			Host:   proxyHost,
+			Scheme: cfg.Aggregator.Proxy.Scheme,
+			User:   url.UserPassword(cfg.Aggregator.Proxy.Login, cfg.Aggregator.Proxy.Password),
+			Host:   cfg.Aggregator.Proxy.Host,
 		}
 		transport.Proxy = http.ProxyURL(proxyUrl)
 		webClient.Transport = transport
 	}
-	openRouterClient, err := llm.NewClient(
-		os.Getenv("OPENROUTER_API_KEY"),
-		os.Getenv("OPENROUTER_BASE_URL"),
-		os.Getenv("OPENROUTER_MODEL"),
-		webClient,
-	)
+	openRouterClient, err := llm.NewClient(cfg.Aggregator.Llm, webClient)
 	if err != nil {
 		log.Fatal("Failed to initialize open router client", zap.Error(err))
 		return

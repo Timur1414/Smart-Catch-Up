@@ -28,6 +28,17 @@ func (obj PostgresConfig) DSN() string {
 		obj.User, obj.Password, obj.Host, obj.Port, obj.DBName, obj.SSLMode)
 }
 
+type RedisConfig struct {
+	Host     string `env:"REDIS_HOST" env-required:"true"`
+	Port     string `env:"REDIS_PORT" env-required:"true"`
+	Password string `env:"REDIS_PASSWORD" env-required:"true"`
+	DB       int    `yaml:"db" env-default:"0"`
+}
+
+func (obj RedisConfig) DSN() string {
+	return fmt.Sprintf("redis://:%s@%s:%s/%d", obj.Password, obj.Host, obj.Port, obj.DB)
+}
+
 func Load[T any](path string) (*T, error) {
 	var config T
 	if err := cleanenv.ReadConfig(path, &config); err != nil {

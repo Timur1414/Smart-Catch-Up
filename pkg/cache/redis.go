@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Timur1414/Smart-Catch-Up/pkg/config"
 	"github.com/redis/go-redis/v9"
 )
 
-func New(ctx context.Context, connString string) (*redis.Client, error) {
+func New(ctx context.Context, redisCfg config.RedisConfig) (*redis.Client, error) {
 	var opt *redis.Options
-	opt, err := redis.ParseURL(connString)
+	opt, err := redis.ParseURL(redisCfg.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse redis url: %w", err)
 	}

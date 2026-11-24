@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/config"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/repository"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
@@ -42,18 +43,18 @@ type Jwt struct {
 	version                string
 }
 
-func NewJwt(repo repository.RefreshTokenRepository, twoFactorRepo repository.TwoFactorTokenRepository, secret string, version string) (*Jwt, error) {
-	if len(secret) < 8 {
+func NewJwt(repo repository.RefreshTokenRepository, twoFactorRepo repository.TwoFactorTokenRepository, jwtConfig config.JwtConfig) (*Jwt, error) {
+	if len(jwtConfig.Secret) < 8 {
 		return nil, domain.ErrSecretTooShort
 	}
-	if version == "" {
+	if jwtConfig.Version == "" {
 		return nil, domain.ErrVersionIsEmpty
 	}
 	return &Jwt{
 		refreshTokenRepository: repo,
 		tempTokenRepository:    twoFactorRepo,
-		secret:                 []byte(secret),
-		version:                version,
+		secret:                 []byte(jwtConfig.Secret),
+		version:                jwtConfig.Version,
 	}, nil
 }
 

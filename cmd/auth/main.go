@@ -32,9 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	DEBUG := cfg.Common.Debug
-
-	err = logger.InitLogger(DEBUG)
+	err = logger.InitLogger(cfg.Common.Debug)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -47,25 +45,16 @@ func main() {
 	}()
 	log := logger.GetLogger()
 
-	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_DB"),
-	)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	dbPool, err := database.New(ctx, connStr)
+	dbPool, err := database.New(ctx, cfg.Auth.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))
 	}
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
-	redisAddr := fmt.Sprintf("redis://:%s@%s:%s/0", os.Getenv("REDIS_PASSWORD"), os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
-	redisClient, err := cache.New(ctx, redisAddr)
+	redisClient, err := cache.New(ctx, cfg.Auth.Redis)
 	if err != nil {
 		log.Fatal("Failed to connect to redis", zap.Error(err))
 	}
@@ -81,13 +70,13 @@ func main() {
 	jwtRepo := repository.NewRefreshTokenRedis(redisClient)
 	twoFactorRepo := repository.NewTwoFactorTokenRedis(redisClient)
 	log.Info("Repository initialized")
-	encryptor, err := crypto.NewEncryptor([]byte(os.Getenv("ENCRYPTOR_KEY")))
+	encryptor, err := crypto.NewEncryptor([]byte(cfg.Auth.Encryptor.Secret))
 	if err != nil {
 		log.Fatal("Failed to initialize encryptor", zap.Error(err))
 		return
 	}
 	userUseCase := usecase.NewUser(userRepo, encryptor)
-	jwtUseCase, err := usecase.NewJwt(jwtRepo, twoFactorRepo, os.Getenv("JWT_SECRET"), os.Getenv("JWT_VERSION"))
+	jwtUseCase, err := usecase.NewJwt(jwtRepo, twoFactorRepo, cfg.Auth.Jwt)
 	if err != nil {
 		log.Fatal("Failed to initialize jwt", zap.Error(err))
 	}

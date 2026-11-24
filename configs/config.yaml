@@ -11,6 +11,10 @@ aggregator:
     max_conns: 50
     min_conns: 10
     max_conn_lifetime: "1h"
+  redis:
+    db: 0
+  proxy:
+    scheme: "socks5"
 
 api_gateway:
   log_prefix: "api"
@@ -18,11 +22,15 @@ api_gateway:
   generator_target: "generator:50052"
   fileserver_target: "fileserver:50053"
   port: "8080"
+  read_timeout: "10s"
+  write_timeout: "120s"
   postgres:
     ssl_mode: "disable"
     max_conns: 50
     min_conns: 10
     max_conn_lifetime: "1h"
+  redis:
+    db: 0
 
 auth:
   log_prefix: "auth"
@@ -32,6 +40,8 @@ auth:
     max_conns: 50
     min_conns: 10
     max_conn_lifetime: "1h"
+  redis:
+    db: 0
 
 fileserver:
   log_prefix: "fileserver"

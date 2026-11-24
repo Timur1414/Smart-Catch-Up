@@ -30,9 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	DEBUG := cfg.Common.Debug
-
-	err = logger.InitLogger(DEBUG)
+	err = logger.InitLogger(cfg.Common.Debug)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -45,17 +43,9 @@ func main() {
 	}()
 	log := logger.GetLogger()
 
-	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_DB"),
-	)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	dbPool, err := database.New(ctx, connStr)
+	dbPool, err := database.New(ctx, cfg.Generator.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))
 	}

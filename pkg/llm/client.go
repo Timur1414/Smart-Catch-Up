@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/config"
 )
 
 type LlmClient interface {
@@ -76,20 +78,11 @@ type Client struct {
 	client  *http.Client
 }
 
-func NewClient(apiKey string, baseUrl string, model string, client *http.Client) (*Client, error) {
-	if apiKey == "" {
-		return nil, fmt.Errorf("api key is required")
-	}
-	if baseUrl == "" {
-		return nil, fmt.Errorf("base url is required")
-	}
-	if model == "" {
-		return nil, fmt.Errorf("model is required")
-	}
+func NewClient(llmCfg config.LlmConfig, client *http.Client) (*Client, error) {
 	return &Client{
-		apiKey:  apiKey,
-		baseUrl: strings.TrimRight(baseUrl, "/"),
-		model:   model,
+		apiKey:  llmCfg.ApiKey,
+		baseUrl: strings.TrimRight(llmCfg.BaseUrl, "/"),
+		model:   llmCfg.Model,
 		client:  client,
 	}, nil
 }

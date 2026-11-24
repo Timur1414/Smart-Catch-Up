@@ -37,9 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	DEBUG := cfg.Common.Debug
-
-	err = logger.InitLogger(DEBUG)
+	err = logger.InitLogger(cfg.Common.Debug)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -63,25 +61,16 @@ func main() {
 		}
 	}()
 
-	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		os.Getenv("POSTGRES_USER"),
-		os.Getenv("POSTGRES_PASSWORD"),
-		os.Getenv("POSTGRES_HOST"),
-		os.Getenv("POSTGRES_PORT"),
-		os.Getenv("POSTGRES_DB"),
-	)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	dbPool, err := database.New(ctx, connStr)
+	dbPool, err := database.New(ctx, cfg.Api.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))
 	}
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
-	redisAddr := fmt.Sprintf("redis://:%s@%s:%s/0", os.Getenv("REDIS_PASSWORD"), os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT"))
-	redisClient, err := cache.New(ctx, redisAddr)
+	redisClient, err := cache.New(ctx, cfg.Api.Redis)
 	if err != nil {
 		log.Fatal("Failed to connect to redis", zap.Error(err))
 	}
@@ -153,7 +142,7 @@ func main() {
 	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
 	log.Info("Handler initialized")
 
-	csrfServer, err := csrf.NewCsrf(os.Getenv("CSRF_SECRET"))
+	csrfServer, err := csrf.NewCsrf(cfg.Api.Csrf.Secret)
 	if err != nil {
 		log.Fatal("Failed to initialize CSRF", zap.Error(err))
 		return
@@ -203,8 +192,8 @@ func main() {
 	server := http.Server{
 		Addr:         addr,
 		Handler:      rootHandler,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 120 * time.Second,
+		ReadTimeout:  cfg.Api.ReadTimeout,
+		WriteTimeout: cfg.Api.WriteTimeout,
 	}
 	log.Info("starting api server",
 		zap.String("addr", addr),
