@@ -8,7 +8,13 @@ import (
 )
 
 type Common struct {
-	Debug bool `yaml:"debug" env:"DEBUG" env-default:"false"`
+	Debug                      bool          `yaml:"debug"`
+	FrontUrl                   string        `yaml:"front_url"`
+	ExtensionUrl               string        `yaml:"extension_url"`
+	DigestCacheTtl             time.Duration `yaml:"digest_cache_ttl"`
+	DigestCachePrefix          string        `yaml:"digest_cache_prefix"`
+	AccessTokenExpirationTime  time.Duration `yaml:"access_token_expiration_time"`
+	RefreshTokenExpirationTime time.Duration `yaml:"refresh_token_expiration_time"`
 }
 
 type PostgresConfig struct {
@@ -17,10 +23,10 @@ type PostgresConfig struct {
 	DBName          string        `env:"POSTGRES_DB" env-required:"true"`
 	User            string        `env:"POSTGRES_USER" env-required:"true"`
 	Password        string        `env:"POSTGRES_PASSWORD" env-required:"true"`
-	SSLMode         string        `yaml:"ssl_mode" env:"POSTGRES_SSLMODE" env-default:"disable"`
-	MaxConns        int32         `yaml:"max_conns" env:"POSTGRES_MAX_CONNS" env-default:"20"`
-	MinConns        int32         `yaml:"min_conns" env:"POSTGRES_MIN_CONNS" env-default:"5"`
-	MaxConnLifetime time.Duration `yaml:"max_conn_lifetime" env:"POSTGRES_MAX_CONN_LIFETIME" env-default:"1h"`
+	SSLMode         string        `yaml:"ssl_mode"`
+	MaxConns        int32         `yaml:"max_conns"`
+	MinConns        int32         `yaml:"min_conns"`
+	MaxConnLifetime time.Duration `yaml:"max_conn_lifetime"`
 }
 
 func (obj PostgresConfig) DSN() string {
@@ -32,7 +38,7 @@ type RedisConfig struct {
 	Host     string `env:"REDIS_HOST" env-required:"true"`
 	Port     string `env:"REDIS_PORT" env-required:"true"`
 	Password string `env:"REDIS_PASSWORD" env-required:"true"`
-	DB       int    `yaml:"db" env-default:"0"`
+	DB       int    `yaml:"db"`
 }
 
 func (obj RedisConfig) DSN() string {

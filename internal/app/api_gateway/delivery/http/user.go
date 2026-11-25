@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	fileserverpb "github.com/Timur1414/Smart-Catch-Up/api/proto/file_server"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/config"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
@@ -23,16 +24,16 @@ type UserHandler struct {
 	settingsUsecase     usecase.SettingsUseCase
 	fileserver          fileserverpb.FileServerClient
 	notificationUsecase usecase.NotificationUseCase
+	cfg                 config.ApiConfig
 }
 
-const maxAvatarSize = 5 * 1024 * 1024
-
-func NewUserHandler(userUsecase usecase.UserUseCase, settings usecase.SettingsUseCase, fileserverClient fileserverpb.FileServerClient, notifUsecase usecase.NotificationUseCase) *UserHandler {
+func NewUserHandler(userUsecase usecase.UserUseCase, settings usecase.SettingsUseCase, fileserverClient fileserverpb.FileServerClient, notifUsecase usecase.NotificationUseCase, cfg config.ApiConfig) *UserHandler {
 	return &UserHandler{
 		userUsecase:         userUsecase,
 		settingsUsecase:     settings,
 		fileserver:          fileserverClient,
 		notificationUsecase: notifUsecase,
+		cfg:                 cfg,
 	}
 }
 
@@ -127,7 +128,7 @@ func (obj *UserHandler) UpdateProfileAvatar(w http.ResponseWriter, r *http.Reque
 	log.Info("Update profile avatar")
 	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	userId := context_helper.GetUserIdFromContext(r.Context())
-	r.Body = http.MaxBytesReader(w, r.Body, maxAvatarSize)
+	r.Body = http.MaxBytesReader(w, r.Body, obj.cfg.MaxAvatarSize)
 	file, fileHeader, err := r.FormFile("avatar")
 	if err != nil {
 		log.Warn("Failed to read avatar from multipart form", zap.Error(err))

@@ -3,8 +3,9 @@ package config
 import "github.com/Timur1414/Smart-Catch-Up/pkg/config"
 
 type FileserverConfig struct {
-	LogPrefix string `yaml:"log_prefix" env-default:"fileserver"`
-	Port      string `yaml:"port" env-default:"50053"`
+	LogPrefix string `yaml:"log_prefix"`
+	Port      string `yaml:"port"`
+	StaticDir string `yaml:"static_dir"`
 }
 
 type Config struct {

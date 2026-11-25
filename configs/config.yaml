@@ -1,5 +1,11 @@
 common:
   debug: true
+  front_url: "https://money-first.ru/"
+  extension_url: "chrome-extension://pfekhfkigjonhiheikggociceocdcdcb"
+  digest_cache_ttl: "24h"
+  digest_cache_prefix: "cache:digest:"
+  access_token_expiration_time: "5m"
+  refresh_token_expiration_time: "168h"
 
 aggregator:
   log_prefix: "aggregator"
@@ -14,6 +20,7 @@ aggregator:
   redis:
     db: 0
   proxy:
+    on: false
     scheme: "socks5"
 
 api_gateway:
@@ -24,6 +31,11 @@ api_gateway:
   port: "8080"
   read_timeout: "10s"
   write_timeout: "120s"
+  access_token_name: "access_token"
+  refresh_token_name: "refresh_token"
+  extension_user_id: 2
+  max_avatar_size: 5242880
+  count_raw_notifications: 10
   postgres:
     ssl_mode: "disable"
     max_conns: 50
@@ -31,10 +43,23 @@ api_gateway:
     max_conn_lifetime: "1h"
   redis:
     db: 0
+  csrf:
+    header_name: "X-CSRF-Token"
+    cookie_name: "__Host-csrf_token"
+    cookie_expiration_time: "5m"
 
 auth:
   log_prefix: "auth"
   port: "50051"
+  refresh_token_prefix: "auth:refresh:"
+  two_factor_flow_prefix: "auth:2fa:flow:"
+  two_factor_attempts_prefix: "auth:2fa:attempts:"
+  two_factor_token_expiration_time: "3m"
+  used_code_prefix: "auth:2fa:used:"
+  used_code_expiration_time: "90s"
+  access_token_type: "auth_access_token"
+  refresh_token_type: "auth_refresh_token"
+  temp_token_type: "auth_temp_token"
   postgres:
     ssl_mode: "disable"
     max_conns: 50
@@ -46,6 +71,7 @@ auth:
 fileserver:
   log_prefix: "fileserver"
   port: "50053"
+  static_dir: "static"
 
 generator:
   log_prefix: "generator"

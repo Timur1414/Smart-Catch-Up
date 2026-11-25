@@ -3,13 +3,14 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/config"
 	apiDelivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/secure/csrf"
+	commonConfig "github.com/Timur1414/Smart-Catch-Up/pkg/config"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/web_helpers"
@@ -84,7 +85,7 @@ func AccessLogMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handler {
+func AuthMiddleware(next http.Handler, authServer authpb.AuthClient, cfg config.ApiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := logger.GetLogger()
 		path := r.URL.Path
@@ -93,7 +94,7 @@ func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handle
 			return
 		}
 		requestId := context_helper.GetRequestIdFromContext(r.Context())
-		cookie, err := apiDelivery.GetAccessCookie(r.Context(), r)
+		cookie, err := apiDelivery.GetAccessCookie(r.Context(), r, cfg)
 		if err != nil {
 			log.Error("[auth middleware] failed to get access cookie", zap.String("path", path), zap.Error(err))
 			response := web_helpers.NewUnauthorizedResponse(requestId)
@@ -112,13 +113,13 @@ func AuthMiddleware(next http.Handler, authServer authpb.AuthClient) http.Handle
 	})
 }
 
-func CORSMiddleware(next http.Handler) http.Handler {
+func CORSMiddleware(next http.Handler, cfg commonConfig.Common) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := r.Header.Get("Origin")
 		var allowedOrigins = map[string]bool{
-			os.Getenv("FRONT_URL"):                                true,
+			cfg.FrontUrl: true,
 			"chrome-extension://aingfmhpfjccljcjmffajjhgiojakiam": true,
-			"chrome-extension://pfekhfkigjonhiheikggociceocdcdcb": true,
+			cfg.ExtensionUrl: true,
 		}
 		if allowedOrigins[origin] {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
@@ -134,7 +135,7 @@ func CORSMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func CSRFMiddleware(next http.Handler, csrfService csrf.Service) http.Handler {
+func CSRFMiddleware(next http.Handler, csrfService csrf.Service, cfg config.ApiConfig) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log := logger.GetLoggerWithRequestId(r.Context())
 		if strings.HasPrefix(r.URL.Path, "/auth/") || r.URL.Path == "/healthz" {
@@ -148,12 +149,12 @@ func CSRFMiddleware(next http.Handler, csrfService csrf.Service) http.Handler {
 			return
 		}
 		if r.Method == http.MethodGet || r.Method == http.MethodOptions || r.Method == http.MethodHead || r.Method == http.MethodTrace || r.Method == http.MethodConnect {
-			csrfService.SetCsrfCookie(r.Context(), w, r)
+			csrfService.SetCsrfCookie(r.Context(), w, r, cfg)
 			next.ServeHTTP(w, r)
 			return
 		}
 		log.Info("[CSRF middleware] check CSRF token", zap.String("path", r.URL.Path))
-		accessToken, err := csrfService.GetAccessToken(r.Context(), r)
+		accessToken, err := csrfService.GetAccessToken(r.Context(), r, cfg)
 		if err != nil {
 			log.Warn("[CSRF middleware] failed to get access token from cookie", zap.String("path", r.URL.Path), zap.Error(err))
 			response := web_helpers.NewUnauthorizedResponse(requestId)

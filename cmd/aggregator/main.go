@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -113,7 +112,7 @@ func main() {
 	log.Info("Connected to Redis")
 
 	webClient := &http.Client{}
-	if strings.Contains(os.Getenv("OPENROUTER_MODEL"), "gemini") {
+	if cfg.Aggregator.Proxy.On {
 		transport := http.DefaultTransport.(*http.Transport).Clone()
 		proxyUrl := &url.URL{
 			Scheme: cfg.Aggregator.Proxy.Scheme,
@@ -134,7 +133,7 @@ func main() {
 	digestRepo := repository.NewDigestPostgres(dbPool)
 	userRepo := repository.NewUserPostgres(dbPool)
 	settingsRepo := repository.NewSettingsPostgres(dbPool)
-	cacheRepo := repository.NewCacheRedis(redisClient)
+	cacheRepo := repository.NewCacheRedis(redisClient, cfg.Common)
 	log.Info("Repository initialized")
 	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo, settingsRepo, openRouterClient, cacheRepo)
 	log.Info("Usecase initialized")

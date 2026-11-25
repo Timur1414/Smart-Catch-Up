@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/config"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/repository"
 )
@@ -15,14 +16,18 @@ type NotificationUseCase interface {
 
 type Notification struct {
 	repository repository.NotificationRepository
+	cfg        config.ApiConfig
 }
 
-func NewNotification(repo repository.NotificationRepository) *Notification {
-	return &Notification{repository: repo}
+func NewNotification(repo repository.NotificationRepository, cfg config.ApiConfig) *Notification {
+	return &Notification{
+		repository: repo,
+		cfg:        cfg,
+	}
 }
 
 func (obj *Notification) GetByUser(ctx context.Context, userId int) ([]domain.Notification, error) {
-	return obj.repository.GetByUser(ctx, userId, 10)
+	return obj.repository.GetByUser(ctx, userId, obj.cfg.CountRawNotifications)
 }
 
 func (obj *Notification) GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error) {

@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/config"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/usecase"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
@@ -91,12 +92,14 @@ func (obj *DigestHandler) Get(w http.ResponseWriter, r *http.Request) {
 type DigestExtensionHandler struct {
 	usecase      usecase.DigestUseCase
 	blockUsecase usecase.BlockUseCase
+	cfg          config.ApiConfig
 }
 
-func NewDigestExtensionHandler(usecase usecase.DigestUseCase, blockUsecase usecase.BlockUseCase) *DigestExtensionHandler {
+func NewDigestExtensionHandler(usecase usecase.DigestUseCase, blockUsecase usecase.BlockUseCase, cfg config.ApiConfig) *DigestExtensionHandler {
 	return &DigestExtensionHandler{
 		usecase:      usecase,
 		blockUsecase: blockUsecase,
+		cfg:          cfg,
 	}
 }
 
@@ -104,8 +107,7 @@ func (obj *DigestExtensionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Get digest request")
 	requestId := context_helper.GetRequestIdFromContext(r.Context())
-	userId := 2
-	user := domain.User{Id: userId}
+	user := domain.User{Id: obj.cfg.ExtensionUserId}
 	digest, err := obj.usecase.GetByUser(r.Context(), user)
 	if err != nil {
 		response := web_helpers.NewServerErrorResponse(requestId)

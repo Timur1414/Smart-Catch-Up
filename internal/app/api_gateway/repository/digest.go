@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/domain"
+	commonConfig "github.com/Timur1414/Smart-Catch-Up/pkg/config"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -22,11 +23,6 @@ type CacheRepository interface {
 	Get(ctx context.Context, userId int) (domain.DigestCache, error)
 	Update(ctx context.Context, userId int, block domain.Block) error
 }
-
-const (
-	cacheTTL    = 24 * time.Hour
-	cachePrefix = "cache:digest:"
-)
 
 type DigestPostgres struct {
 	db *pgxpool.Pool
@@ -62,18 +58,20 @@ func (obj *DigestPostgres) GetByUser(ctx context.Context, user domain.User) (dom
 }
 
 type CacheRedis struct {
-	db *redis.Client
+	db  *redis.Client
+	cfg commonConfig.Common
 }
 
-func NewCacheRedis(client *redis.Client) *CacheRedis {
+func NewCacheRedis(client *redis.Client, cfg commonConfig.Common) *CacheRedis {
 	return &CacheRedis{
-		db: client,
+		db:  client,
+		cfg: cfg,
 	}
 }
 
 func (obj *CacheRedis) Get(ctx context.Context, userId int) (domain.DigestCache, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	key := cachePrefix + strconv.Itoa(userId)
+	key := obj.cfg.DigestCachePrefix + strconv.Itoa(userId)
 	start := time.Now()
 	data, err := obj.db.Get(ctx, key).Bytes()
 	if err != nil {
@@ -99,9 +97,9 @@ func (obj *CacheRedis) Update(ctx context.Context, userId int, block domain.Bloc
 		log.Error("failed to marshal cached_digest", zap.Error(err))
 		return err
 	}
-	key := cachePrefix + strconv.Itoa(userId)
+	key := obj.cfg.DigestCachePrefix + strconv.Itoa(userId)
 	start := time.Now()
-	err = obj.db.Set(ctx, key, data, cacheTTL).Err()
+	err = obj.db.Set(ctx, key, data, obj.cfg.DigestCacheTtl).Err()
 	if err != nil {
 		log.Error("failed to set cache", zap.Error(err))
 		return err

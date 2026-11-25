@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/fileserver/config"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/fileserver/domain"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/google/uuid"
@@ -16,20 +17,16 @@ type FileRepository interface {
 	StoreFile(ctx context.Context, data io.Reader, extension string) (string, error)
 }
 
-const (
-	StaticDir = "static"
-)
-
 type FileLocalStore struct {
 	dir string
 }
 
-func NewFileLocalStore() (*FileLocalStore, error) {
-	err := os.MkdirAll(StaticDir, 0o755)
+func NewFileLocalStore(cfg config.FileserverConfig) (*FileLocalStore, error) {
+	err := os.MkdirAll(cfg.StaticDir, 0o755)
 	if err != nil {
 		return nil, domain.ErrFailedToCreateDir
 	}
-	return &FileLocalStore{dir: StaticDir}, nil
+	return &FileLocalStore{dir: cfg.StaticDir}, nil
 }
 
 func (obj *FileLocalStore) StoreFile(ctx context.Context, data io.Reader, extension string) (string, error) {

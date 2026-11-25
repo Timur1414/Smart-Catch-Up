@@ -14,9 +14,9 @@ func New(ctx context.Context, postgresCfg config.PostgresConfig) (*pgxpool.Pool,
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse pgx config: %w", err)
 	}
-	cfg.MaxConns = 90
-	cfg.MinConns = 10
-	cfg.MaxConnLifetime = time.Hour
+	cfg.MaxConns = postgresCfg.MaxConns
+	cfg.MinConns = postgresCfg.MinConns
+	cfg.MaxConnLifetime = postgresCfg.MaxConnLifetime
 	cfg.MaxConnIdleTime = 10 * time.Minute
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {

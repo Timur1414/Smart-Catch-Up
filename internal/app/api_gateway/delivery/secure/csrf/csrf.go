@@ -9,42 +9,36 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
-	apiDelivery "github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/delivery/http"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/config"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"go.uber.org/zap"
 )
 
 type Service interface {
 	ValidateCsrf(ctx context.Context, csrfToken string, accessToken string) (bool, error)
-	SetCsrfCookie(ctx context.Context, w http.ResponseWriter, r *http.Request)
+	SetCsrfCookie(ctx context.Context, w http.ResponseWriter, r *http.Request, cfg config.ApiConfig)
 	GetCsrfFromCookie(ctx context.Context, r *http.Request) string
 	GetCsrfFromHeader(r *http.Request) string
-	GetAccessToken(ctx context.Context, r *http.Request) (string, error)
+	GetAccessToken(ctx context.Context, r *http.Request, cfg config.ApiConfig) (string, error)
 	ValidateSecFetchSite(r *http.Request) bool
 }
-
-const (
-	HeaderName           = "X-CSRF-Token"
-	CookieName           = "__Host-csrf_token"
-	CookieExpirationTime = 5 * time.Minute
-)
 
 type Csrf struct {
 	secret          []byte
 	randNonceLength int
-	mu              sync.RWMutex
+	cfg             config.CsrfConfig
 }
 
-func NewCsrf(secretKey string) (*Csrf, error) {
+func NewCsrf(secretKey string, cfg config.CsrfConfig) (*Csrf, error) {
 	if secretKey == "" {
 		return &Csrf{}, ErrCsrfSecret
 	}
 	return &Csrf{
 		secret:          []byte(secretKey),
 		randNonceLength: 32,
+		cfg:             cfg,
 	}, nil
 }
 
@@ -68,8 +62,8 @@ func (obj *Csrf) ValidateCsrf(ctx context.Context, csrfToken string, accessToken
 	return true, nil
 }
 
-func (obj *Csrf) SetCsrfCookie(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	token, err := obj.GetAccessToken(ctx, r)
+func (obj *Csrf) SetCsrfCookie(ctx context.Context, w http.ResponseWriter, r *http.Request, cfg config.ApiConfig) {
+	token, err := obj.GetAccessToken(ctx, r, cfg)
 	if err != nil {
 		return
 	}
@@ -78,18 +72,18 @@ func (obj *Csrf) SetCsrfCookie(ctx context.Context, w http.ResponseWriter, r *ht
 		return
 	}
 	http.SetCookie(w, &http.Cookie{
-		Name:     CookieName,
+		Name:     obj.cfg.CookieName,
 		Value:    signedCsrfToken,
 		Path:     "/",
 		HttpOnly: false,
 		Secure:   true,
 		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Now().Add(CookieExpirationTime).UTC(),
+		Expires:  time.Now().Add(obj.cfg.CookieExpirationTime).UTC(),
 	})
 }
 
 func (obj *Csrf) GetCsrfFromCookie(ctx context.Context, r *http.Request) string {
-	cookie, err := r.Cookie(CookieName)
+	cookie, err := r.Cookie(obj.cfg.CookieName)
 	if err != nil {
 		log := logger.GetLoggerWithRequestId(ctx)
 		log.Warn("Failed to get CSRF cookie", zap.Error(err))
@@ -99,11 +93,11 @@ func (obj *Csrf) GetCsrfFromCookie(ctx context.Context, r *http.Request) string 
 }
 
 func (obj *Csrf) GetCsrfFromHeader(r *http.Request) string {
-	return r.Header.Get(HeaderName)
+	return r.Header.Get(obj.cfg.HeaderName)
 }
 
-func (obj *Csrf) GetAccessToken(ctx context.Context, r *http.Request) (string, error) {
-	cookie, err := r.Cookie(apiDelivery.AccessTokenName)
+func (obj *Csrf) GetAccessToken(ctx context.Context, r *http.Request, cfg config.ApiConfig) (string, error) {
+	cookie, err := r.Cookie(cfg.AccessTokenName)
 	if err != nil {
 		log := logger.GetLoggerWithRequestId(ctx)
 		log.Warn("Failed to get access token", zap.Error(err))
@@ -143,7 +137,7 @@ func (obj *Csrf) ValidateSecFetchSite(r *http.Request) bool {
 }
 
 func (obj *Csrf) generateRandValue(ctx context.Context) (string, error) {
-	data := make([]byte, obj.getRandNonceLength())
+	data := make([]byte, obj.randNonceLength)
 	_, err := rand.Read(data)
 	if err != nil {
 		log := logger.GetLoggerWithRequestId(ctx)
@@ -159,21 +153,9 @@ func (obj *Csrf) generateSignedCsrf(ctx context.Context, token string) (string, 
 		return "", err
 	}
 	message := fmt.Sprintf("%d!%s!%d!%s", len(token), token, len(randomValue), randomValue)
-	hmacObj := hmac.New(sha256.New, obj.getSecret())
+	hmacObj := hmac.New(sha256.New, obj.secret)
 	hmacObj.Write([]byte(message))
 	hmacValue := hex.EncodeToString(hmacObj.Sum(nil))
 	csrfToken := hmacValue + "." + randomValue
 	return csrfToken, nil
-}
-
-func (obj *Csrf) getSecret() []byte {
-	obj.mu.RLock()
-	defer obj.mu.RUnlock()
-	return obj.secret
-}
-
-func (obj *Csrf) getRandNonceLength() int {
-	obj.mu.RLock()
-	defer obj.mu.RUnlock()
-	return obj.randNonceLength
 }

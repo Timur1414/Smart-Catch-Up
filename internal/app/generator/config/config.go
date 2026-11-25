@@ -3,8 +3,8 @@ package config
 import "github.com/Timur1414/Smart-Catch-Up/pkg/config"
 
 type GeneratorConfig struct {
-	LogPrefix string                `yaml:"log_prefix" env-default:"generator"`
-	Port      string                `yaml:"port" env-default:"50052"`
+	LogPrefix string                `yaml:"log_prefix"`
+	Port      string                `yaml:"port"`
 	Postgres  config.PostgresConfig `yaml:"postgres"`
 }
 

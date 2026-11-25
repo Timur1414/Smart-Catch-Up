@@ -7,6 +7,7 @@ import (
 	"time"
 
 	authpb "github.com/Timur1414/Smart-Catch-Up/api/proto/auth"
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/api_gateway/config"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/context_helper"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/validators"
@@ -16,19 +17,16 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const (
-	AccessTokenName            = "access_token"
-	RefreshTokenName           = "refresh_token"
-	AccessTokenExpirationTime  = time.Minute * 5
-	RefreshTokenExpirationTime = time.Hour * 24 * 7
-)
-
 type AuthHandler struct {
 	authServer authpb.AuthClient
+	cfg        config.Config
 }
 
-func NewAuthHandler(authServer authpb.AuthClient) *AuthHandler {
-	return &AuthHandler{authServer: authServer}
+func NewAuthHandler(authServer authpb.AuthClient, cfg config.Config) *AuthHandler {
+	return &AuthHandler{
+		authServer: authServer,
+		cfg:        cfg,
+	}
 }
 
 func (obj *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +61,7 @@ func (obj *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), obj.cfg)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
@@ -72,7 +70,7 @@ func (obj *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	log.Info("Refresh request")
-	refreshToken, err := GetRefreshCookie(r.Context(), r)
+	refreshToken, err := GetRefreshCookie(r.Context(), r, obj.cfg.Api)
 	if err != nil {
 		response := web_helpers.NewUnauthorizedResponse(requestId)
 		web_helpers.WriteResponseJSON(w, response.Code, response)
@@ -86,7 +84,7 @@ func (obj *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), obj.cfg)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
@@ -126,7 +124,7 @@ func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), obj.cfg)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
@@ -136,13 +134,13 @@ func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	log.Info("Logout request")
 	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	userId := context_helper.GetUserIdFromContext(r.Context())
-	accessToken, err := GetAccessCookie(r.Context(), r)
+	accessToken, err := GetAccessCookie(r.Context(), r, obj.cfg.Api)
 	if err != nil {
 		response := web_helpers.NewUnauthorizedResponse(requestId)
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	refreshToken, err := GetRefreshCookie(r.Context(), r)
+	refreshToken, err := GetRefreshCookie(r.Context(), r, obj.cfg.Api)
 	if err != nil {
 		response := web_helpers.NewUnauthorizedResponse(requestId)
 		web_helpers.WriteResponseJSON(w, response.Code, response)
@@ -158,7 +156,7 @@ func (obj *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	ClearAuthCookies(w)
+	ClearAuthCookies(w, obj.cfg.Api)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
@@ -194,7 +192,7 @@ func (obj *AuthHandler) Login2FA(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken())
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), obj.cfg)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
@@ -279,48 +277,48 @@ func (obj *AuthHandler) Disable2FA(w http.ResponseWriter, r *http.Request) {
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
 
-func GetAccessCookie(ctx context.Context, r *http.Request) (*http.Cookie, error) {
+func GetAccessCookie(ctx context.Context, r *http.Request, cfg config.ApiConfig) (*http.Cookie, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	cookie, err := r.Cookie(AccessTokenName)
+	cookie, err := r.Cookie(cfg.AccessTokenName)
 	if err != nil {
 		log.Warn("failed to get token cookie", zap.Error(err))
 	}
 	return cookie, err
 }
 
-func GetRefreshCookie(ctx context.Context, r *http.Request) (*http.Cookie, error) {
+func GetRefreshCookie(ctx context.Context, r *http.Request, cfg config.ApiConfig) (*http.Cookie, error) {
 	log := logger.GetLoggerWithRequestId(ctx)
-	cookie, err := r.Cookie(RefreshTokenName)
+	cookie, err := r.Cookie(cfg.RefreshTokenName)
 	if err != nil {
 		log.Warn("failed to get refresh token cookie", zap.Error(err))
 	}
 	return cookie, err
 }
 
-func WriteAuthCookies(w http.ResponseWriter, accessToken string, refreshToken string) {
+func WriteAuthCookies(w http.ResponseWriter, accessToken string, refreshToken string, cfg config.Config) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     AccessTokenName,
+		Name:     cfg.Api.AccessTokenName,
 		Value:    accessToken,
 		Path:     "/",
-		Expires:  time.Now().Add(AccessTokenExpirationTime).UTC(),
+		Expires:  time.Now().Add(cfg.Common.AccessTokenExpirationTime).UTC(),
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
 	http.SetCookie(w, &http.Cookie{
-		Name:     RefreshTokenName,
+		Name:     cfg.Api.RefreshTokenName,
 		Value:    refreshToken,
 		Path:     "/auth/",
-		Expires:  time.Now().Add(RefreshTokenExpirationTime).UTC(),
+		Expires:  time.Now().Add(cfg.Common.RefreshTokenExpirationTime).UTC(),
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
 }
 
-func ClearAuthCookies(w http.ResponseWriter) {
+func ClearAuthCookies(w http.ResponseWriter, cfg config.ApiConfig) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     AccessTokenName,
+		Name:     cfg.AccessTokenName,
 		Value:    "",
 		Path:     "/",
 		Expires:  time.Now().AddDate(0, -1, 0).UTC(),
@@ -329,7 +327,7 @@ func ClearAuthCookies(w http.ResponseWriter) {
 		SameSite: http.SameSiteLaxMode,
 	})
 	http.SetCookie(w, &http.Cookie{
-		Name:     RefreshTokenName,
+		Name:     cfg.RefreshTokenName,
 		Value:    "",
 		Path:     "/auth/",
 		Expires:  time.Now().AddDate(0, -1, 0).UTC(),

@@ -13,6 +13,7 @@ type LlmConfig struct {
 }
 
 type ProxyConfig struct {
+	On       bool   `yaml:"on"`
 	Host     string `env:"PROXY_HOST" env-required:"true"`
 	Login    string `env:"PROXY_LOGIN" env-required:"true"`
 	Password string `env:"PROXY_PASSWORD" env-required:"true"`
@@ -20,10 +21,10 @@ type ProxyConfig struct {
 }
 
 type AggregatorConfig struct {
-	LogPrefix   string                `yaml:"log_prefix" env:"LOG_PREFIX" env-default:"aggregator"`
-	BatchSize   int                   `yaml:"batch_size" env:"BATCH_SIZE" env-default:"100"`
-	WorkerCount int                   `yaml:"worker_count" env:"WORKER_COUNT" env-default:"1"`
-	Interval    time.Duration         `yaml:"interval" env:"INTERVAL" env-default:"10s"`
+	LogPrefix   string                `yaml:"log_prefix"`
+	BatchSize   int                   `yaml:"batch_size"`
+	WorkerCount int                   `yaml:"worker_count"`
+	Interval    time.Duration         `yaml:"interval"`
 	Postgres    config.PostgresConfig `yaml:"postgres"`
 	Redis       config.RedisConfig    `yaml:"redis"`
 	Proxy       ProxyConfig           `yaml:"proxy"`

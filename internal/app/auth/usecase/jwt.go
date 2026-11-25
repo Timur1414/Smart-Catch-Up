@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/config"
@@ -29,21 +28,15 @@ type JwtUseCase interface {
 	Mark2FACodeUsed(ctx context.Context, userId int, code string) (bool, error)
 }
 
-const (
-	AccessTokenType  = "auth_access_token"
-	RefreshTokenType = "auth_refresh_token"
-	TempTokenType    = "auth_temp_token"
-)
-
 type Jwt struct {
 	refreshTokenRepository repository.RefreshTokenRepository
 	tempTokenRepository    repository.TwoFactorTokenRepository
-	mu                     sync.RWMutex
 	secret                 []byte
 	version                string
+	cfg                    config.Config
 }
 
-func NewJwt(repo repository.RefreshTokenRepository, twoFactorRepo repository.TwoFactorTokenRepository, jwtConfig config.JwtConfig) (*Jwt, error) {
+func NewJwt(repo repository.RefreshTokenRepository, twoFactorRepo repository.TwoFactorTokenRepository, jwtConfig config.JwtConfig, cfg config.Config) (*Jwt, error) {
 	if len(jwtConfig.Secret) < 8 {
 		return nil, domain.ErrSecretTooShort
 	}
@@ -55,6 +48,7 @@ func NewJwt(repo repository.RefreshTokenRepository, twoFactorRepo repository.Two
 		tempTokenRepository:    twoFactorRepo,
 		secret:                 []byte(jwtConfig.Secret),
 		version:                jwtConfig.Version,
+		cfg:                    cfg,
 	}, nil
 }
 
@@ -69,15 +63,15 @@ func (obj *Jwt) CreatePair(ctx context.Context, userId int) (string, string, err
 
 	claims := domain.Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(repository.AccessTokenExpirationTime).UTC()),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(obj.cfg.Common.AccessTokenExpirationTime).UTC()),
 			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-			Issuer:    obj.GetVersion(),
+			Issuer:    obj.version,
 			Subject:   userIdStr,
 		},
-		Type: AccessTokenType,
+		Type: obj.cfg.Auth.AccessTokenType,
 	}
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	accessTokenStr, err := accessToken.SignedString(obj.GetSecret())
+	accessTokenStr, err := accessToken.SignedString(obj.secret)
 	if err != nil {
 		log.Error("failed to sign access token",
 			zap.Int("user_id", userId),
@@ -85,20 +79,20 @@ func (obj *Jwt) CreatePair(ctx context.Context, userId int) (string, string, err
 		return "", "", err
 	}
 
-	refreshExpirationTime := time.Now().Add(repository.RefreshTokenExpirationTime).UTC()
+	refreshExpirationTime := time.Now().Add(obj.cfg.Common.RefreshTokenExpirationTime).UTC()
 	refreshId := uuid.New().String()
 	refreshClaims := domain.Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        refreshId,
 			ExpiresAt: jwt.NewNumericDate(refreshExpirationTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-			Issuer:    obj.GetVersion(),
+			Issuer:    obj.version,
 			Subject:   userIdStr,
 		},
-		Type: RefreshTokenType,
+		Type: obj.cfg.Auth.RefreshTokenType,
 	}
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshTokenStr, err := refreshToken.SignedString(obj.GetSecret())
+	refreshTokenStr, err := refreshToken.SignedString(obj.secret)
 	if err != nil {
 		log.Error("failed to sign refresh token",
 			zap.Int("user_id", userId),
@@ -125,7 +119,7 @@ func (obj *Jwt) DeleteRefreshToken(ctx context.Context, refreshToken string) err
 	if err != nil {
 		return err
 	}
-	if claims.Type != RefreshTokenType {
+	if claims.Type != obj.cfg.Auth.RefreshTokenType {
 		log.Warn("invalid refresh token type")
 		return domain.ErrInvalidTokenType
 	}
@@ -143,11 +137,11 @@ func (obj *Jwt) CheckAccessToken(ctx context.Context, tokenStr string) (bool, in
 	if err != nil {
 		return false, -1
 	}
-	if claims.Type != AccessTokenType {
+	if claims.Type != obj.cfg.Auth.AccessTokenType {
 		log.Warn("invalid access token type")
 		return false, -1
 	}
-	if claims.Issuer != obj.GetVersion() {
+	if claims.Issuer != obj.version {
 		log.Warn("invalid token (invalid version)")
 		return false, -1
 	}
@@ -164,11 +158,11 @@ func (obj *Jwt) CheckRefreshToken(ctx context.Context, tokenStr string) (bool, i
 	if err != nil {
 		return false, -1
 	}
-	if claims.Type != RefreshTokenType {
+	if claims.Type != obj.cfg.Auth.RefreshTokenType {
 		log.Warn("invalid refresh token type")
 		return false, -1
 	}
-	if claims.Issuer != obj.GetVersion() {
+	if claims.Issuer != obj.version {
 		log.Warn("invalid token (invalid version)")
 		return false, -1
 	}
@@ -201,7 +195,7 @@ func (obj *Jwt) ExtractClaims(ctx context.Context, tokenStr string) (domain.Clai
 			log.Warn("Unexpected signing method")
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return obj.GetSecret(), nil
+		return obj.secret, nil
 	})
 	if err != nil || !token.Valid {
 		log.Warn("Token parse error", zap.Error(err))
@@ -217,20 +211,20 @@ func (obj *Jwt) CreateTempToken(ctx context.Context, userId int) (string, error)
 	if err != nil {
 		return "", err
 	}
-	tempTokenExpirationDate := time.Now().Add(repository.TwoFactorTokenExpirationTime).UTC()
+	tempTokenExpirationDate := time.Now().Add(obj.cfg.Auth.TwoFactorTokenExpirationTime).UTC()
 	tempUuid := uuid.New().String()
 	claims := domain.Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        tempUuid,
 			ExpiresAt: jwt.NewNumericDate(tempTokenExpirationDate),
 			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-			Issuer:    obj.GetVersion(),
+			Issuer:    obj.version,
 			Subject:   userIdStr,
 		},
-		Type: TempTokenType,
+		Type: obj.cfg.Auth.TempTokenType,
 	}
 	tempToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tempTokenStr, err := tempToken.SignedString(obj.GetSecret())
+	tempTokenStr, err := tempToken.SignedString(obj.secret)
 	if err != nil {
 		log.Error("failed to sign temp token", zap.Error(err))
 		return "", err
@@ -256,11 +250,11 @@ func (obj *Jwt) CheckTempToken(ctx context.Context, tokenStr string) (bool, int)
 	if err != nil {
 		return false, -1
 	}
-	if claims.Type != TempTokenType {
+	if claims.Type != obj.cfg.Auth.TempTokenType {
 		log.Warn("invalid temp token type")
 		return false, -1
 	}
-	if claims.Issuer != obj.GetVersion() {
+	if claims.Issuer != obj.version {
 		log.Warn("invalid token (invalid version)")
 		return false, -1
 	}
@@ -290,7 +284,7 @@ func (obj *Jwt) DeleteTempToken(ctx context.Context, tokenStr string) error {
 	if err != nil {
 		return err
 	}
-	if claims.Type != TempTokenType {
+	if claims.Type != obj.cfg.Auth.TempTokenType {
 		log.Warn("invalid temp token type")
 		return domain.ErrInvalidTokenType
 	}
@@ -308,16 +302,4 @@ func (obj *Jwt) IncrementTempTokenAttempts(ctx context.Context, userId int) (int
 
 func (obj *Jwt) Mark2FACodeUsed(ctx context.Context, userId int, code string) (bool, error) {
 	return obj.tempTokenRepository.Mark2FACodeUsed(ctx, userId, code)
-}
-
-func (obj *Jwt) GetVersion() string {
-	obj.mu.RLock()
-	defer obj.mu.RUnlock()
-	return obj.version
-}
-
-func (obj *Jwt) GetSecret() []byte {
-	obj.mu.RLock()
-	defer obj.mu.RUnlock()
-	return obj.secret
 }

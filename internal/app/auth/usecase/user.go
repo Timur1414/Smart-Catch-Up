@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/config"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/domain"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/auth/repository"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/crypto"
@@ -30,12 +31,14 @@ type UserUseCase interface {
 type User struct {
 	repository repository.UserRepository
 	crypto     *crypto.Encryptor
+	cfg        config.AuthConfig
 }
 
-func NewUser(repo repository.UserRepository, crypto *crypto.Encryptor) *User {
+func NewUser(repo repository.UserRepository, crypto *crypto.Encryptor, cfg config.AuthConfig) *User {
 	return &User{
 		repository: repo,
 		crypto:     crypto,
+		cfg:        cfg,
 	}
 }
 
@@ -91,7 +94,7 @@ func (obj *User) Setup2FA(ctx context.Context, userId int) (string, string, erro
 		return "", "", domain.ErrTotpAlreadyExists
 	}
 	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      "SmartCatchUp",
+		Issuer:      obj.cfg.TotpIssuer,
 		AccountName: user.Email,
 	})
 	if err != nil {
