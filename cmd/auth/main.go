@@ -67,16 +67,16 @@ func main() {
 	log.Info("Connected to Redis")
 
 	userRepo := repository.NewUserPostgres(dbPool)
-	jwtRepo := repository.NewRefreshTokenRedis(redisClient, *cfg)
-	twoFactorRepo := repository.NewTwoFactorTokenRedis(redisClient, cfg.Auth)
+	jwtRepo := repository.NewRefreshTokenRedis(redisClient, cfg)
+	twoFactorRepo := repository.NewTwoFactorTokenRedis(redisClient, cfg)
 	log.Info("Repository initialized")
 	encryptor, err := crypto.NewEncryptor([]byte(cfg.Auth.Encryptor.Secret))
 	if err != nil {
 		log.Fatal("Failed to initialize encryptor", zap.Error(err))
 		return
 	}
-	userUseCase := usecase.NewUser(userRepo, encryptor, cfg.Auth)
-	jwtUseCase, err := usecase.NewJwt(jwtRepo, twoFactorRepo, cfg.Auth.Jwt, *cfg)
+	userUseCase := usecase.NewUser(userRepo, encryptor, cfg)
+	jwtUseCase, err := usecase.NewJwt(jwtRepo, twoFactorRepo, cfg)
 	if err != nil {
 		log.Fatal("Failed to initialize jwt", zap.Error(err))
 	}

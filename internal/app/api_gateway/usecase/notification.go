@@ -16,10 +16,10 @@ type NotificationUseCase interface {
 
 type Notification struct {
 	repository repository.NotificationRepository
-	cfg        config.ApiConfig
+	cfg        *config.Config
 }
 
-func NewNotification(repo repository.NotificationRepository, cfg config.ApiConfig) *Notification {
+func NewNotification(repo repository.NotificationRepository, cfg *config.Config) *Notification {
 	return &Notification{
 		repository: repo,
 		cfg:        cfg,
@@ -27,7 +27,7 @@ func NewNotification(repo repository.NotificationRepository, cfg config.ApiConfi
 }
 
 func (obj *Notification) GetByUser(ctx context.Context, userId int) ([]domain.Notification, error) {
-	return obj.repository.GetByUser(ctx, userId, obj.cfg.CountRawNotifications)
+	return obj.repository.GetByUser(ctx, userId, obj.cfg.Api.CountRawNotifications)
 }
 
 func (obj *Notification) GetAllByUser(ctx context.Context, userId int) ([]domain.Notification, error) {

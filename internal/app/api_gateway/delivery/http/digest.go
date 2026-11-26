@@ -92,10 +92,10 @@ func (obj *DigestHandler) Get(w http.ResponseWriter, r *http.Request) {
 type DigestExtensionHandler struct {
 	usecase      usecase.DigestUseCase
 	blockUsecase usecase.BlockUseCase
-	cfg          config.ApiConfig
+	cfg          *config.Config
 }
 
-func NewDigestExtensionHandler(usecase usecase.DigestUseCase, blockUsecase usecase.BlockUseCase, cfg config.ApiConfig) *DigestExtensionHandler {
+func NewDigestExtensionHandler(usecase usecase.DigestUseCase, blockUsecase usecase.BlockUseCase, cfg *config.Config) *DigestExtensionHandler {
 	return &DigestExtensionHandler{
 		usecase:      usecase,
 		blockUsecase: blockUsecase,
@@ -107,7 +107,7 @@ func (obj *DigestExtensionHandler) Get(w http.ResponseWriter, r *http.Request) {
 	log := logger.GetLoggerWithRequestId(r.Context())
 	log.Info("Get digest request")
 	requestId := context_helper.GetRequestIdFromContext(r.Context())
-	user := domain.User{Id: obj.cfg.ExtensionUserId}
+	user := domain.User{Id: obj.cfg.Api.ExtensionUserId}
 	digest, err := obj.usecase.GetByUser(r.Context(), user)
 	if err != nil {
 		response := web_helpers.NewServerErrorResponse(requestId)

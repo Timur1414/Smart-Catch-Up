@@ -24,10 +24,10 @@ type UserHandler struct {
 	settingsUsecase     usecase.SettingsUseCase
 	fileserver          fileserverpb.FileServerClient
 	notificationUsecase usecase.NotificationUseCase
-	cfg                 config.ApiConfig
+	cfg                 *config.Config
 }
 
-func NewUserHandler(userUsecase usecase.UserUseCase, settings usecase.SettingsUseCase, fileserverClient fileserverpb.FileServerClient, notifUsecase usecase.NotificationUseCase, cfg config.ApiConfig) *UserHandler {
+func NewUserHandler(userUsecase usecase.UserUseCase, settings usecase.SettingsUseCase, fileserverClient fileserverpb.FileServerClient, notifUsecase usecase.NotificationUseCase, cfg *config.Config) *UserHandler {
 	return &UserHandler{
 		userUsecase:         userUsecase,
 		settingsUsecase:     settings,
@@ -128,7 +128,7 @@ func (obj *UserHandler) UpdateProfileAvatar(w http.ResponseWriter, r *http.Reque
 	log.Info("Update profile avatar")
 	requestId := context_helper.GetRequestIdFromContext(r.Context())
 	userId := context_helper.GetUserIdFromContext(r.Context())
-	r.Body = http.MaxBytesReader(w, r.Body, obj.cfg.MaxAvatarSize)
+	r.Body = http.MaxBytesReader(w, r.Body, obj.cfg.Api.MaxAvatarSize)
 	file, fileHeader, err := r.FormFile("avatar")
 	if err != nil {
 		log.Warn("Failed to read avatar from multipart form", zap.Error(err))

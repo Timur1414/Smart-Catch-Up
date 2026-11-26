@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/config"
 	"github.com/Timur1414/Smart-Catch-Up/internal/app/aggregator/domain"
-	commonConfig "github.com/Timur1414/Smart-Catch-Up/pkg/config"
 	"github.com/Timur1414/Smart-Catch-Up/pkg/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
@@ -48,10 +48,10 @@ func (obj *DigestPostgres) UpdateBlock(ctx context.Context, userId int, newBlock
 
 type CacheRedis struct {
 	db  *redis.Client
-	cfg commonConfig.Common
+	cfg *config.Config
 }
 
-func NewCacheRedis(client *redis.Client, cfg commonConfig.Common) *CacheRedis {
+func NewCacheRedis(client *redis.Client, cfg *config.Config) *CacheRedis {
 	return &CacheRedis{
 		db:  client,
 		cfg: cfg,
@@ -66,9 +66,9 @@ func (obj *CacheRedis) Add(ctx context.Context, userId int, block domain.Block) 
 		log.Error("failed to marshal cached_digest", zap.Error(err))
 		return err
 	}
-	key := obj.cfg.DigestCachePrefix + strconv.Itoa(userId)
+	key := obj.cfg.Common.DigestCachePrefix + strconv.Itoa(userId)
 	start := time.Now()
-	err = obj.db.Set(ctx, key, data, obj.cfg.DigestCacheTtl).Err()
+	err = obj.db.Set(ctx, key, data, obj.cfg.Common.DigestCacheTtl).Err()
 	if err != nil {
 		log.Error("failed to set cache", zap.Error(err))
 		return err

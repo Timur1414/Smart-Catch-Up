@@ -31,14 +31,14 @@ type Csrf struct {
 	cfg             config.CsrfConfig
 }
 
-func NewCsrf(secretKey string, cfg config.CsrfConfig) (*Csrf, error) {
-	if secretKey == "" {
+func NewCsrf(cfg *config.Config) (*Csrf, error) {
+	if cfg.Api.Csrf.Secret == "" {
 		return &Csrf{}, ErrCsrfSecret
 	}
 	return &Csrf{
-		secret:          []byte(secretKey),
+		secret:          []byte(cfg.Api.Csrf.Secret),
 		randNonceLength: 32,
-		cfg:             cfg,
+		cfg:             cfg.Api.Csrf,
 	}, nil
 }
 

@@ -21,12 +21,12 @@ type FileLocalStore struct {
 	dir string
 }
 
-func NewFileLocalStore(cfg config.FileserverConfig) (*FileLocalStore, error) {
-	err := os.MkdirAll(cfg.StaticDir, 0o755)
+func NewFileLocalStore(cfg *config.Config) (*FileLocalStore, error) {
+	err := os.MkdirAll(cfg.Fileserver.StaticDir, 0o755)
 	if err != nil {
 		return nil, domain.ErrFailedToCreateDir
 	}
-	return &FileLocalStore{dir: cfg.StaticDir}, nil
+	return &FileLocalStore{dir: cfg.Fileserver.StaticDir}, nil
 }
 
 func (obj *FileLocalStore) StoreFile(ctx context.Context, data io.Reader, extension string) (string, error) {

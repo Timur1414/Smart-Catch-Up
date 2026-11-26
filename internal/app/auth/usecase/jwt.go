@@ -33,21 +33,21 @@ type Jwt struct {
 	tempTokenRepository    repository.TwoFactorTokenRepository
 	secret                 []byte
 	version                string
-	cfg                    config.Config
+	cfg                    *config.Config
 }
 
-func NewJwt(repo repository.RefreshTokenRepository, twoFactorRepo repository.TwoFactorTokenRepository, jwtConfig config.JwtConfig, cfg config.Config) (*Jwt, error) {
-	if len(jwtConfig.Secret) < 8 {
+func NewJwt(repo repository.RefreshTokenRepository, twoFactorRepo repository.TwoFactorTokenRepository, cfg *config.Config) (*Jwt, error) {
+	if len(cfg.Auth.Jwt.Secret) < 8 {
 		return nil, domain.ErrSecretTooShort
 	}
-	if jwtConfig.Version == "" {
+	if cfg.Auth.Jwt.Version == "" {
 		return nil, domain.ErrVersionIsEmpty
 	}
 	return &Jwt{
 		refreshTokenRepository: repo,
 		tempTokenRepository:    twoFactorRepo,
-		secret:                 []byte(jwtConfig.Secret),
-		version:                jwtConfig.Version,
+		secret:                 []byte(cfg.Auth.Jwt.Secret),
+		version:                cfg.Auth.Jwt.Version,
 		cfg:                    cfg,
 	}, nil
 }

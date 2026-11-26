@@ -42,7 +42,7 @@ func main() {
 	}()
 	log := logger.GetLogger()
 
-	fileRepo, err := repository.NewFileLocalStore(cfg.Fileserver)
+	fileRepo, err := repository.NewFileLocalStore(cfg)
 	if err != nil {
 		log.Fatal("failed to create file repository", zap.Error(err))
 		return

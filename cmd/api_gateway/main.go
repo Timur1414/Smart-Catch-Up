@@ -83,7 +83,7 @@ func main() {
 	log.Info("Connected to Redis")
 
 	authConn, err := grpc.NewClient(
-		cfg.Api.AuthTarget,
+		cfg.Api.Targets.AuthTarget,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			d := net.Dialer{Timeout: 10 * time.Second}
@@ -96,7 +96,7 @@ func main() {
 	authClient := authpb.NewAuthClient(authConn)
 
 	generatorConn, err := grpc.NewClient(
-		cfg.Api.GeneratorTarget,
+		cfg.Api.Targets.GeneratorTarget,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			d := net.Dialer{Timeout: 10 * time.Second}
@@ -109,7 +109,7 @@ func main() {
 	generatorClient := generatorpb.NewGeneratorClient(generatorConn)
 
 	fileserverConn, err := grpc.NewClient(
-		cfg.Api.FileserverTarget,
+		cfg.Api.Targets.FileserverTarget,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 			d := net.Dialer{Timeout: 10 * time.Second}
@@ -126,23 +126,23 @@ func main() {
 	notificationRepo := repository.NewNotificationPostgres(dbPool)
 	digestRepo := repository.NewDigestPostgres(dbPool)
 	blockRepo := repository.NewBlockPostgres(dbPool)
-	cacheRepo := repository.NewCacheRedis(redisClient, cfg.Common)
+	cacheRepo := repository.NewCacheRedis(redisClient, cfg)
 	log.Info("Repository initialized")
 	userUseCase := usecase.NewUser(userRepo)
 	settingsUseCase := usecase.NewSettings(settingsRepo)
-	notificationUseCase := usecase.NewNotification(notificationRepo, cfg.Api)
+	notificationUseCase := usecase.NewNotification(notificationRepo, cfg)
 	digestUseCase := usecase.NewDigest(digestRepo, cacheRepo)
 	blockUseCase := usecase.NewBlock(blockRepo)
 	log.Info("UseCase initialized")
-	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase, fileserverClient, notificationUseCase, cfg.Api)
+	userHandler := delivery.NewUserHandler(userUseCase, settingsUseCase, fileserverClient, notificationUseCase, cfg)
 	digestHandler := delivery.NewDigestHandler(digestUseCase, blockUseCase)
-	digestExtensionHandler := delivery.NewDigestExtensionHandler(digestUseCase, blockUseCase, cfg.Api)
+	digestExtensionHandler := delivery.NewDigestExtensionHandler(digestUseCase, blockUseCase, cfg)
 	adminHandler := delivery.NewAdminHandler(generatorClient, userUseCase, notificationUseCase)
-	authHandler := delivery.NewAuthHandler(authClient, *cfg)
+	authHandler := delivery.NewAuthHandler(authClient, cfg)
 	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
 	log.Info("Handler initialized")
 
-	csrfServer, err := csrf.NewCsrf(cfg.Api.Csrf.Secret, cfg.Api.Csrf)
+	csrfServer, err := csrf.NewCsrf(cfg)
 	if err != nil {
 		log.Fatal("Failed to initialize CSRF", zap.Error(err))
 		return
@@ -168,15 +168,15 @@ func main() {
 	webMux.HandleFunc("POST /api/admin/generate_n", adminHandler.GenerateN)
 	webMux.HandleFunc("GET /api/users_ids", userHandler.GetAllowedIds)
 	webMux.HandleFunc("GET /api/notification_types", notificationsHandler.GetAllTypes)
-	webHandler := middleware.CSRFMiddleware(webMux, csrfServer, cfg.Api)
-	webHandler = middleware.AuthMiddleware(webHandler, authClient, cfg.Api)
-	webHandler = middleware.CORSMiddleware(webHandler, cfg.Common)
+	webHandler := middleware.CSRFMiddleware(webMux, csrfServer, cfg)
+	webHandler = middleware.AuthMiddleware(webHandler, authClient, cfg)
+	webHandler = middleware.CORSMiddleware(webHandler, cfg)
 	webHandler = middleware.PanicMiddleware(webHandler)
 	webHandler = middleware.AccessLogMiddleware(webHandler)
 
 	extMux := http.NewServeMux()
 	extMux.HandleFunc("GET /api/ext/digest", digestExtensionHandler.Get)
-	extHandler := middleware.CORSMiddleware(extMux, cfg.Common)
+	extHandler := middleware.CORSMiddleware(extMux, cfg)
 
 	rootMux := http.NewServeMux()
 	rootMux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {

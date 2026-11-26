@@ -133,7 +133,7 @@ func main() {
 	digestRepo := repository.NewDigestPostgres(dbPool)
 	userRepo := repository.NewUserPostgres(dbPool)
 	settingsRepo := repository.NewSettingsPostgres(dbPool)
-	cacheRepo := repository.NewCacheRedis(redisClient, cfg.Common)
+	cacheRepo := repository.NewCacheRedis(redisClient, cfg)
 	log.Info("Repository initialized")
 	blockUsecase := usecase.NewBlock(blockRepo, notificationRepo, digestRepo, settingsRepo, openRouterClient, cacheRepo)
 	log.Info("Usecase initialized")

@@ -19,10 +19,10 @@ import (
 
 type AuthHandler struct {
 	authServer authpb.AuthClient
-	cfg        config.Config
+	cfg        *config.Config
 }
 
-func NewAuthHandler(authServer authpb.AuthClient, cfg config.Config) *AuthHandler {
+func NewAuthHandler(authServer authpb.AuthClient, cfg *config.Config) *AuthHandler {
 	return &AuthHandler{
 		authServer: authServer,
 		cfg:        cfg,
@@ -61,7 +61,7 @@ func (obj *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), obj.cfg)
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), *obj.cfg)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
@@ -84,7 +84,7 @@ func (obj *AuthHandler) Refresh(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), obj.cfg)
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), *obj.cfg)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
@@ -124,7 +124,7 @@ func (obj *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), obj.cfg)
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), *obj.cfg)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }
@@ -192,7 +192,7 @@ func (obj *AuthHandler) Login2FA(w http.ResponseWriter, r *http.Request) {
 		web_helpers.WriteResponseJSON(w, response.Code, response)
 		return
 	}
-	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), obj.cfg)
+	WriteAuthCookies(w, authResponse.GetAccessToken(), authResponse.GetRefreshToken(), *obj.cfg)
 	response := web_helpers.NewOkResponse()
 	web_helpers.WriteResponseJSON(w, response.Code, response)
 }

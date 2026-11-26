@@ -31,10 +31,10 @@ type UserUseCase interface {
 type User struct {
 	repository repository.UserRepository
 	crypto     *crypto.Encryptor
-	cfg        config.AuthConfig
+	cfg        *config.Config
 }
 
-func NewUser(repo repository.UserRepository, crypto *crypto.Encryptor, cfg config.AuthConfig) *User {
+func NewUser(repo repository.UserRepository, crypto *crypto.Encryptor, cfg *config.Config) *User {
 	return &User{
 		repository: repo,
 		crypto:     crypto,
@@ -94,7 +94,7 @@ func (obj *User) Setup2FA(ctx context.Context, userId int) (string, string, erro
 		return "", "", domain.ErrTotpAlreadyExists
 	}
 	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      obj.cfg.TotpIssuer,
+		Issuer:      obj.cfg.Auth.TotpIssuer,
 		AccountName: user.Email,
 	})
 	if err != nil {

@@ -25,9 +25,6 @@ aggregator:
 
 api_gateway:
   log_prefix: "api"
-  auth_target: "auth:50051"
-  generator_target: "generator:50051"
-  fileserver_target: "fileserver:50051"
   port: "8080"
   read_timeout: "10s"
   write_timeout: "120s"
@@ -36,6 +33,10 @@ api_gateway:
   extension_user_id: 2
   max_avatar_size: 5242880 # 5 MB
   count_raw_notifications: 10
+  targets:
+    auth_target: "auth:50051"
+    generator_target: "generator:50051"
+    fileserver_target: "fileserver:50051"
   postgres:
     ssl_mode: "disable"
     max_conns: 50
