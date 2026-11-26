@@ -1,6 +1,6 @@
 common:
   debug: true
-  front_url: "https://money-first.ru/"
+  front_url: "http://localhost:5173"
   extension_url: "chrome-extension://pfekhfkigjonhiheikggociceocdcdcb"
   digest_cache_ttl: "24h"
   digest_cache_prefix: "cache:digest:"
@@ -26,8 +26,8 @@ aggregator:
 api_gateway:
   log_prefix: "api"
   auth_target: "auth:50051"
-  generator_target: "generator:50052"
-  fileserver_target: "fileserver:50053"
+  generator_target: "generator:50051"
+  fileserver_target: "fileserver:50051"
   port: "8080"
   read_timeout: "10s"
   write_timeout: "120s"
@@ -70,12 +70,12 @@ auth:
 
 fileserver:
   log_prefix: "fileserver"
-  port: "50053"
+  port: "50051"
   static_dir: "static"
 
 generator:
   log_prefix: "generator"
-  port: "50052"
+  port: "50051"
   postgres:
     ssl_mode: "disable"
     max_conns: 50
