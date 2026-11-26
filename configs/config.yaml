@@ -1,6 +1,6 @@
 common:
   debug: true
-  front_url: "http://localhost:5173"
+  front_url: "https://money-first.ru"
   extension_url: "chrome-extension://pfekhfkigjonhiheikggociceocdcdcb"
   digest_cache_ttl: "24h"
   digest_cache_prefix: "cache:digest:"
@@ -34,7 +34,7 @@ api_gateway:
   access_token_name: "access_token"
   refresh_token_name: "refresh_token"
   extension_user_id: 2
-  max_avatar_size: 5242880
+  max_avatar_size: 5242880 # 5 MB
   count_raw_notifications: 10
   postgres:
     ssl_mode: "disable"

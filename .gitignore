@@ -164,3 +164,4 @@ $RECYCLE.BIN/
 /static/*
 /dump.sql
 /vpn/
+/configs/config.override.yaml
