@@ -19,20 +19,26 @@ type TargetConfig struct {
 	FileserverTarget string `yaml:"fileserver_target"`
 }
 
+type PostgresCredentialsConfig struct {
+	Login    string `env:"API_SERVICE_USER_LOGIN" env-required:"true"`
+	Password string `env:"API_SERVICE_USER_PASSWORD" env-required:"true"`
+}
+
 type ApiConfig struct {
-	LogPrefix             string                `yaml:"log_prefix"`
-	Port                  string                `yaml:"port"`
-	ReadTimeout           time.Duration         `yaml:"read_timeout"`
-	WriteTimeout          time.Duration         `yaml:"write_timeout"`
-	Postgres              config.PostgresConfig `yaml:"postgres"`
-	Redis                 config.RedisConfig    `yaml:"redis"`
-	Csrf                  CsrfConfig            `yaml:"csrf"`
-	AccessTokenName       string                `yaml:"access_token_name"`
-	RefreshTokenName      string                `yaml:"refresh_token_name"`
-	ExtensionUserId       int                   `yaml:"extension_user_id"`
-	MaxAvatarSize         int64                 `yaml:"max_avatar_size"`
-	CountRawNotifications int                   `yaml:"count_raw_notifications"`
-	Targets               TargetConfig          `yaml:"targets"`
+	LogPrefix             string                    `yaml:"log_prefix"`
+	Port                  string                    `yaml:"port"`
+	ReadTimeout           time.Duration             `yaml:"read_timeout"`
+	WriteTimeout          time.Duration             `yaml:"write_timeout"`
+	Postgres              config.PostgresConfig     `yaml:"postgres"`
+	Redis                 config.RedisConfig        `yaml:"redis"`
+	Csrf                  CsrfConfig                `yaml:"csrf"`
+	AccessTokenName       string                    `yaml:"access_token_name"`
+	RefreshTokenName      string                    `yaml:"refresh_token_name"`
+	ExtensionUserId       int                       `yaml:"extension_user_id"`
+	MaxAvatarSize         int64                     `yaml:"max_avatar_size"`
+	CountRawNotifications int                       `yaml:"count_raw_notifications"`
+	Targets               TargetConfig              `yaml:"targets"`
+	PostgresCredentials   PostgresCredentialsConfig `yaml:"postgres_credentials"`
 }
 
 type Config struct {

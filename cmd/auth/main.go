@@ -47,6 +47,8 @@ func main() {
 
 	postgresCtx, postgresCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer postgresCancel()
+	cfg.Auth.Postgres.User = cfg.Auth.PostgresCredentials.Login
+	cfg.Auth.Postgres.Password = cfg.Auth.PostgresCredentials.Password
 	dbPool, err := database.New(postgresCtx, cfg.Auth.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))

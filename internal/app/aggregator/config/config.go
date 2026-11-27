@@ -20,15 +20,21 @@ type ProxyConfig struct {
 	Scheme   string `yaml:"scheme" end-default:"socks5"`
 }
 
+type PostgresCredentialsConfig struct {
+	Login    string `env:"AGGREGATOR_SERVICE_USER_LOGIN" env-required:"true"`
+	Password string `env:"AGGREGATOR_SERVICE_USER_PASSWORD" env-required:"true"`
+}
+
 type AggregatorConfig struct {
-	LogPrefix   string                `yaml:"log_prefix"`
-	BatchSize   int                   `yaml:"batch_size"`
-	WorkerCount int                   `yaml:"worker_count"`
-	Interval    time.Duration         `yaml:"interval"`
-	Postgres    config.PostgresConfig `yaml:"postgres"`
-	Redis       config.RedisConfig    `yaml:"redis"`
-	Proxy       ProxyConfig           `yaml:"proxy"`
-	Llm         LlmConfig             `yaml:"llm"`
+	LogPrefix           string                    `yaml:"log_prefix"`
+	BatchSize           int                       `yaml:"batch_size"`
+	WorkerCount         int                       `yaml:"worker_count"`
+	Interval            time.Duration             `yaml:"interval"`
+	Postgres            config.PostgresConfig     `yaml:"postgres"`
+	Redis               config.RedisConfig        `yaml:"redis"`
+	Proxy               ProxyConfig               `yaml:"proxy"`
+	Llm                 LlmConfig                 `yaml:"llm"`
+	PostgresCredentials PostgresCredentialsConfig `yaml:"postgres_credentials"`
 }
 
 type Config struct {

@@ -100,6 +100,43 @@ func main() {
 		}
 	}()
 
+	aggregatorServiceUserLogin := os.Getenv("AGGREGATOR_SERVICE_USER_LOGIN")
+	if aggregatorServiceUserLogin == "" {
+		panic("AGGREGATOR_SERVICE_USER_LOGIN is not set")
+	}
+	aggregatorServiceUserPassword := os.Getenv("AGGREGATOR_SERVICE_USER_PASSWORD")
+	if aggregatorServiceUserPassword == "" {
+		panic("AGGREGATOR_SERVICE_USER_PASSWORD is not set")
+	}
+	addServiceUser(conn, aggregatorServiceUserLogin, aggregatorServiceUserPassword, "aggregator_service_role")
+	apiServiceUserLogin := os.Getenv("API_SERVICE_USER_LOGIN")
+	if apiServiceUserLogin == "" {
+		panic("API_SERVICE_USER_LOGIN is not set")
+	}
+	apiServiceUserPassword := os.Getenv("API_SERVICE_USER_PASSWORD")
+	if apiServiceUserPassword == "" {
+		panic("API_SERVICE_USER_PASSWORD is not set")
+	}
+	addServiceUser(conn, apiServiceUserLogin, apiServiceUserPassword, "api_gateway_service_role")
+	authServiceUserLogin := os.Getenv("AUTH_SERVICE_USER_LOGIN")
+	if authServiceUserLogin == "" {
+		panic("AUTH_SERVICE_USER_LOGIN is not set")
+	}
+	authServiceUserPassword := os.Getenv("AUTH_SERVICE_USER_PASSWORD")
+	if authServiceUserPassword == "" {
+		panic("AUTH_SERVICE_USER_PASSWORD is not set")
+	}
+	addServiceUser(conn, authServiceUserLogin, authServiceUserPassword, "auth_service_role")
+	generatorServiceUserLogin := os.Getenv("GENERATOR_SERVICE_USER_LOGIN")
+	if generatorServiceUserLogin == "" {
+		panic("GENERATOR_SERVICE_USER_LOGIN is not set")
+	}
+	generatorServiceUserPassword := os.Getenv("GENERATOR_SERVICE_USER_PASSWORD")
+	if generatorServiceUserPassword == "" {
+		panic("GENERATOR_SERVICE_USER_PASSWORD is not set")
+	}
+	addServiceUser(conn, generatorServiceUserLogin, generatorServiceUserPassword, "generator_service_role")
+
 	systemUserPassword := os.Getenv("SYSTEM_USER_PASSWORD")
 	if systemUserPassword == "" {
 		panic("SYSTEM_USER_PASSWORD is not set")

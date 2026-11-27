@@ -32,7 +32,7 @@ func (obj *NotificationPostgres) GetByUser(ctx context.Context, userId int, limi
 	query := `select
     N.id, N.cluster, N.notification_type, N.actor_id, N.actor_name, N.object_id, N.object_type, N.created_at, N.read_at, N.payload,
     NA.action_type, NA.action_target
-from notification N left join public.notification_action NA on N.id = NA.notification_id where recipient_id = $1 order by created_at desc limit $2;`
+from notification N left join notification_action NA on N.id = NA.notification_id where recipient_id = $1 order by created_at desc limit $2;`
 	args := []any{userId, limit}
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
@@ -88,7 +88,7 @@ func (obj *NotificationPostgres) GetAllByUser(ctx context.Context, userId int) (
 	query := `select
     N.id, N.cluster, N.notification_type, N.actor_id, N.actor_name, N.object_id, N.object_type, N.created_at, N.read_at, N.payload,
     NA.action_type, NA.action_target
-from notification N left join public.notification_action NA on N.id = NA.notification_id where recipient_id = $1 order by created_at desc;`
+from notification N left join notification_action NA on N.id = NA.notification_id where recipient_id = $1 order by created_at desc;`
 	args := []any{userId}
 	start := time.Now()
 	rows, err := obj.db.Query(ctx, query, args...)
