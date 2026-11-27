@@ -30,7 +30,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = logger.InitLogger(cfg.Common.Debug)
+	err = logger.InitLogger(cfg.Common.Debug, cfg.Generator.LogPrefix)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -43,9 +43,9 @@ func main() {
 	}()
 	log := logger.GetLogger()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	dbPool, err := database.New(ctx, cfg.Generator.Postgres)
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer dbCancel()
+	dbPool, err := database.New(dbCtx, cfg.Generator.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))
 	}
@@ -63,7 +63,9 @@ func main() {
 
 	grpcPort := cfg.Generator.Port
 	var listenConfig net.ListenConfig
-	lis, err := listenConfig.Listen(ctx, "tcp", ":"+grpcPort)
+	lisCtx, lisCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer lisCancel()
+	lis, err := listenConfig.Listen(lisCtx, "tcp", ":"+grpcPort)
 	if err != nil {
 		log.Fatal("Failed to listen", zap.String("port", grpcPort), zap.Error(err))
 	}

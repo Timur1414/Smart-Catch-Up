@@ -29,7 +29,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = logger.InitLogger(cfg.Common.Debug)
+	err = logger.InitLogger(cfg.Common.Debug, cfg.Fileserver.LogPrefix)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return

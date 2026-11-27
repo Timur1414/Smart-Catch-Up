@@ -26,6 +26,17 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+func createGrpcConnection(target string) (*grpc.ClientConn, error) {
+	return grpc.NewClient(
+		target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+			d := net.Dialer{Timeout: 10 * time.Second}
+			return d.DialContext(ctx, "tcp4", addr)
+		}),
+	)
+}
+
 func main() {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
@@ -37,7 +48,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = logger.InitLogger(cfg.Common.Debug)
+	err = logger.InitLogger(cfg.Common.Debug, cfg.Api.LogPrefix)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -49,7 +60,7 @@ func main() {
 		}
 	}()
 	log := logger.GetLogger()
-	err = logger.InitAccessLogger()
+	err = logger.InitAccessLogger(cfg.Api.LogPrefix)
 	if err != nil {
 		log.Error("Error initializing access logger", zap.Error(err))
 		return
@@ -61,16 +72,18 @@ func main() {
 		}
 	}()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	dbPool, err := database.New(ctx, cfg.Api.Postgres)
+	postgresCtx, postgresCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer postgresCancel()
+	dbPool, err := database.New(postgresCtx, cfg.Api.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))
 	}
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
-	redisClient, err := cache.New(ctx, cfg.Api.Redis)
+	redisCtx, redisCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer redisCancel()
+	redisClient, err := cache.New(redisCtx, cfg.Api.Redis)
 	if err != nil {
 		log.Fatal("Failed to connect to redis", zap.Error(err))
 	}
@@ -82,40 +95,19 @@ func main() {
 	}()
 	log.Info("Connected to Redis")
 
-	authConn, err := grpc.NewClient(
-		cfg.Api.Targets.AuthTarget,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			d := net.Dialer{Timeout: 10 * time.Second}
-			return d.DialContext(ctx, "tcp4", addr)
-		}),
-	)
+	authConn, err := createGrpcConnection(cfg.Api.Targets.AuthTarget)
 	if err != nil {
 		log.Fatal("Failed to connect to auth service", zap.Error(err))
 	}
 	authClient := authpb.NewAuthClient(authConn)
 
-	generatorConn, err := grpc.NewClient(
-		cfg.Api.Targets.GeneratorTarget,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			d := net.Dialer{Timeout: 10 * time.Second}
-			return d.DialContext(ctx, "tcp4", addr)
-		}),
-	)
+	generatorConn, err := createGrpcConnection(cfg.Api.Targets.GeneratorTarget)
 	if err != nil {
 		log.Fatal("Failed to connect to generator service", zap.Error(err))
 	}
 	generatorClient := generatorpb.NewGeneratorClient(generatorConn)
 
-	fileserverConn, err := grpc.NewClient(
-		cfg.Api.Targets.FileserverTarget,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
-			d := net.Dialer{Timeout: 10 * time.Second}
-			return d.DialContext(ctx, "tcp4", addr)
-		}),
-	)
+	fileserverConn, err := createGrpcConnection(cfg.Api.Targets.FileserverTarget)
 	if err != nil {
 		log.Fatal("Failed to connect to fileserver service", zap.Error(err))
 	}

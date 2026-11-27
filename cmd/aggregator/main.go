@@ -77,7 +77,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = logger.InitLogger(cfg.Common.Debug)
+	err = logger.InitLogger(cfg.Common.Debug, cfg.Aggregator.LogPrefix)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -90,16 +90,18 @@ func main() {
 	}()
 	log := logger.GetLogger()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	dbPool, err := database.New(ctx, cfg.Aggregator.Postgres)
+	postgresCtx, postgresCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer postgresCancel()
+	dbPool, err := database.New(postgresCtx, cfg.Aggregator.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))
 	}
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
-	redisClient, err := cache.New(ctx, cfg.Aggregator.Redis)
+	redisCtx, redisCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer redisCancel()
+	redisClient, err := cache.New(redisCtx, cfg.Aggregator.Redis)
 	if err != nil {
 		log.Fatal("Failed to connect to redis", zap.Error(err))
 	}
@@ -146,7 +148,8 @@ func main() {
 	for {
 		maxUserID, err := userRepo.GetMaxId(aggregationCtx)
 		if err != nil {
-			log.Error("Failed to get max user id", zap.Error(err))
+			log.Fatal("Failed to get max user id", zap.Error(err))
+			return
 		}
 		RunAggregation(aggregationCtx, blockUsecase, maxUserID, batchSize, workerCount)
 		select {

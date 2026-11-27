@@ -32,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = logger.InitLogger(cfg.Common.Debug)
+	err = logger.InitLogger(cfg.Common.Debug, cfg.Auth.LogPrefix)
 	if err != nil {
 		fmt.Println("Error initializing logger: ", err)
 		return
@@ -45,16 +45,18 @@ func main() {
 	}()
 	log := logger.GetLogger()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	dbPool, err := database.New(ctx, cfg.Auth.Postgres)
+	postgresCtx, postgresCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer postgresCancel()
+	dbPool, err := database.New(postgresCtx, cfg.Auth.Postgres)
 	if err != nil {
 		log.Fatal("Failed to connect to postgres", zap.Error(err))
 	}
 	defer dbPool.Close()
 	log.Info("Connected to Postgres")
 
-	redisClient, err := cache.New(ctx, cfg.Auth.Redis)
+	redisCtx, redisCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer redisCancel()
+	redisClient, err := cache.New(redisCtx, cfg.Auth.Redis)
 	if err != nil {
 		log.Fatal("Failed to connect to redis", zap.Error(err))
 	}
@@ -86,7 +88,9 @@ func main() {
 
 	grpcPort := cfg.Auth.Port
 	var listenConfig net.ListenConfig
-	lis, err := listenConfig.Listen(ctx, "tcp", ":"+grpcPort)
+	lisCtx, lisCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer lisCancel()
+	lis, err := listenConfig.Listen(lisCtx, "tcp", ":"+grpcPort)
 	if err != nil {
 		log.Fatal("Failed to listen", zap.String("port", grpcPort), zap.Error(err))
 	}

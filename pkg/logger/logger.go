@@ -19,14 +19,15 @@ var mu sync.RWMutex
 var file *os.File
 var initErr error
 
-func InitLogger(debug bool) error {
+func InitLogger(debug bool, prefix string) error {
 	once.Do(func() {
 		initErr = os.MkdirAll("log", 0755)
 		if initErr != nil {
 			initErr = fmt.Errorf("error creating log dir: %w", initErr)
 			return
 		}
-		file, initErr = os.OpenFile("log/backend.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		filename := fmt.Sprintf("log/%s_backend.log", prefix)
+		file, initErr = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if initErr != nil {
 			initErr = fmt.Errorf("error opening log file: %w", initErr)
 			return
@@ -96,9 +97,10 @@ var accessMu sync.RWMutex
 var accessInitErr error
 var accessFile *os.File
 
-func InitAccessLogger() error {
+func InitAccessLogger(prefix string) error {
 	accessOnce.Do(func() {
-		accessFile, accessInitErr = os.OpenFile("log/access.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+		filename := fmt.Sprintf("log/%s_access.log", prefix)
+		accessFile, accessInitErr = os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 		if accessInitErr != nil {
 			accessInitErr = fmt.Errorf("error opening log file: %w", accessInitErr)
 			return
