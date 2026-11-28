@@ -42,3 +42,13 @@ type Enable2FARequest struct {
 type Disable2FARequest struct {
 	Code string `json:"code"`
 }
+
+type ExtensionNotifications struct {
+	CreatedAt string `json:"created_at"`
+	Author    string `json:"author"`
+	Payload   string `json:"payload"`
+}
+
+type ExtensionNotificationsRequest struct {
+	Notifications []ExtensionNotifications `json:"notifications"`
+}

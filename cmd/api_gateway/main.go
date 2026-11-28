@@ -134,6 +134,7 @@ func main() {
 	adminHandler := delivery.NewAdminHandler(generatorClient, userUseCase, notificationUseCase)
 	authHandler := delivery.NewAuthHandler(authClient, cfg)
 	notificationsHandler := delivery.NewNotificationHandler(notificationUseCase)
+	notificationExtensionHandler := delivery.NewNotificationExtensionHandler(generatorClient, cfg)
 	log.Info("Handler initialized")
 
 	csrfServer, err := csrf.NewCsrf(cfg)
@@ -170,6 +171,7 @@ func main() {
 
 	extMux := http.NewServeMux()
 	extMux.HandleFunc("GET /api/ext/digest", digestExtensionHandler.Get)
+	extMux.HandleFunc("POST /api/ext/receive", notificationExtensionHandler.Receive)
 	extHandler := middleware.CORSMiddleware(extMux, cfg)
 
 	rootMux := http.NewServeMux()

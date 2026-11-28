@@ -86,7 +86,8 @@ create type notification_type_enum as enum (
     'service_notification',
     'game_achievement',
     'promo_selection',
-    'new_feature_offer'
+    'new_feature_offer',
+    'no_type'
 );
 
 create type cluster_type_enum as enum (
