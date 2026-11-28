@@ -7,7 +7,7 @@ grant usage on schema public to aggregator_service_role, api_gateway_service_rol
 
 grant insert on block, block_part to aggregator_service_role;
 grant update on notification, digest to aggregator_service_role;
-grant select on notification, "user", settings to aggregator_service_role;
+grant select on notification, "user", settings, block, digest to aggregator_service_role;
 
 grant select on block, block_part, digest, notification, notification_action, pg_enum, "user", settings to api_gateway_service_role;
 grant update on "user", settings to api_gateway_service_role;
@@ -17,7 +17,7 @@ grant select on "user" to auth_service_role;
 grant update on "user" to auth_service_role;
 
 grant insert on notification, notification_action to generator_service_role;
-grant select on "user", settings to generator_service_role;
+grant select on "user", settings, notification to generator_service_role;
 
 ---- create above / drop below ----
 
